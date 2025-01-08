@@ -1,9 +1,8 @@
 // src/components/Hero.jsx
-
 const Hero = () => {
   return (
     <section
-      className="bg-black bg-cover bg-center"
+      className="bg-black bg-cover bg-center pt-20"
       style={{
         backgroundImage: "url('/assets/HeroSection.png')",
       }}
