@@ -1,4 +1,5 @@
 import ProductCard from './ProductCard';
+import { Link } from 'react-router-dom';
 
 const LatestBids = () => {
   const products = [
@@ -30,6 +31,7 @@ const LatestBids = () => {
 
   return (
     <section className="py-12 bg-white relative">
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading */}
         <div className="text-center mb-6">
@@ -43,10 +45,12 @@ const LatestBids = () => {
 
         {/* Latest Bids Section */}
         <div className="flex items-center justify-between mb-8">
+          
           <h2 className="text-2xl font-bold text-black flex items-center">
             <span className="bg-red-500 h-6 w-2 rounded-full mr-2"></span>
             Latest Bids
           </h2>
+
           <div className="flex space-x-2">
             <button className="p-2 rounded-full border border-gray-300 hover:bg-gray-100">
               &lt;
@@ -55,6 +59,7 @@ const LatestBids = () => {
               &gt;
             </button>
           </div>
+
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -64,10 +69,12 @@ const LatestBids = () => {
         </div>
 
         <div className="flex justify-center mt-6">
-          <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded shadow-lg">
-            View All Products
-          </button>
-        </div>
+      <Link to=".\allproducts">
+        <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded shadow-lg">
+          View All Products
+        </button>
+      </Link>
+    </div>
       </div>
 
       {/* Horizontal Line */}
