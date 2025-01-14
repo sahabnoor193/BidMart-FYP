@@ -6,6 +6,7 @@ import Footer from './components/Footer'
 import AllProducts from './pages/AllProducts'
 import Signup from './pages/SignUp'
 import SignIn from './pages/SignIn'
+import FavouriteBids from './pages/FavouriteBids'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Route path="/allproducts" element={<AllProducts/>} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/signin" element={<SignIn />} />
+            <Route path="/favouritebids" element={<FavouriteBids />} />
           </Routes>
         </main>
         <Footer />

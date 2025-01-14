@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link , useLocation } from 'react-router-dom';
 import { FiSearch, FiShoppingCart,FiHeart } from 'react-icons/fi';
 import { MdOutlinePersonAddAlt } from 'react-icons/md';
 import { HiMenu, HiX } from 'react-icons/hi';
@@ -7,6 +7,12 @@ import { useState } from 'react';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+   // Get the current location
+   const location = useLocation();
+
+   // Check if the current page is /favouritesBids
+   const isOnFavoritesPage = location.pathname === '/favouritesBids';
 
   return (
     <nav className="bg-white text-gray-800 shadow-md fixed w-full z-50">
@@ -37,9 +43,14 @@ const Navbar = () => {
             <button className="p-2 rounded-full hover:bg-gray-100">
               <FiShoppingCart className="w-5 h-5" />
             </button>
-            <button className="p-2 rounded-full hover:bg-gray-100">
-              <FiHeart className="w-5 h-5" />
-            </button>
+            {/* Heart Button with Conditional Color */}
+            <Link to="/favouritebids">
+              <button className="p-2 rounded-full hover:bg-gray-100">
+                <FiHeart 
+                  className={`w-5 h-5 ${isOnFavoritesPage ? 'text-red-500' : 'text-gray-600'}`} 
+                />
+              </button>
+            </Link>
             <Link
               to="/signup"
               className="p-2 rounded-full bg-red-600 text-white hover:bg-black flex items-center"
