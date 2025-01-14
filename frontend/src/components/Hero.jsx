@@ -1,10 +1,12 @@
 // src/components/Hero.jsx
+import heroimage from "../assets/HeroSection.png";
+
 const Hero = () => {
   return (
     <section
       className="bg-black bg-cover bg-center pt-20"
       style={{
-        backgroundImage: "url('/assets/HeroSection.png')",
+        backgroundImage:  `url(${heroimage})`
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">

@@ -749,73 +749,10 @@
 import React, { useEffect, useState } from 'react';
 import { FaFilter, FaTimes } from 'react-icons/fa';
 import ProductCard from '../components/ProductCard';
+import { Link } from 'react-router-dom';
 
 const AllProducts = () => {
   const [products, setProducts] = useState([
-    {
-      id: 1,
-      name: 'Gaming Keyboard RGB',
-      price: 50,
-      date: '2023-12-01',
-      image: 'https://via.placeholder.com/150',
-      category: 'Accessories',
-    },
-    {
-      id: 2,
-      name: '4K Gaming Monitor',
-      price: 150,
-      date: '2023-12-02',
-      image: 'https://via.placeholder.com/150',
-      category: 'Monitors',
-    },
-    {
-      id: 3,
-      name: 'Wireless Controller',
-      price: 30,
-      date: '2023-12-03',
-      image: 'https://via.placeholder.com/150',
-      category: 'Accessories',
-    },
-    {
-      id: 4,
-      name: 'RGB Cooling Fan',
-      price: 20,
-      date: '2023-12-04',
-      image: 'https://via.placeholder.com/150',
-      category: 'Hardware',
-    },
-    {
-      id: 1,
-      name: 'Gaming Keyboard RGB',
-      price: 50,
-      date: '2023-12-01',
-      image: 'https://via.placeholder.com/150',
-      category: 'Accessories',
-    },
-    {
-      id: 2,
-      name: '4K Gaming Monitor',
-      price: 150,
-      date: '2023-12-02',
-      image: 'https://via.placeholder.com/150',
-      category: 'Monitors',
-    },
-    {
-      id: 3,
-      name: 'Wireless Controller',
-      price: 30,
-      date: '2023-12-03',
-      image: 'https://via.placeholder.com/150',
-      category: 'Accessories',
-    },
-    {
-      id: 4,
-      name: 'RGB Cooling Fan',
-      price: 20,
-      date: '2023-12-04',
-      image: 'https://via.placeholder.com/150',
-      category: 'Hardware',
-    },
     {
       id: 1,
       name: 'Gaming Keyboard RGB',
@@ -1059,9 +996,22 @@ const AllProducts = () => {
 
           {/* Product Grid */}
           <div className="flex-1 w-full">
-            <h2 className="text-2xl font-bold text-black flex items-center mb-6">
+            {/* <h2 className="text-2xl font-bold text-black flex items-center mb-6">
               <span className="bg-red-500 h-6 w-2 rounded-full mr-2"></span>
               Home / All Products
+            </h2> */}
+
+            <h2 className="text-2xl font-bold text-black flex items-center mb-6">
+              <span className="bg-red-500 h-6 w-2 rounded-full mr-2"></span>
+              <span>
+                <Link to="/" className="hover:underline">
+                  Home
+                </Link>
+                {' / '}
+                <Link to="/allproducts" className="hover:underline">
+                  All Products
+                </Link>
+              </span>
             </h2>
 
             <div className="grid gap-4 grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">

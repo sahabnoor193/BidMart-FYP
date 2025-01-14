@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { FiSearch, FiShoppingCart,FiHeart } from 'react-icons/fi';
 import { MdOutlinePersonAddAlt } from 'react-icons/md';
 import { HiMenu, HiX } from 'react-icons/hi';
-import Logo from '/assets/Logo.png';
+import Logo from '../assets/Logo.png';
 import { useState } from 'react';
 
 const Navbar = () => {
@@ -41,7 +41,7 @@ const Navbar = () => {
               <FiHeart className="w-5 h-5" />
             </button>
             <Link
-              to="/login"
+              to="/signup"
               className="p-2 rounded-full bg-red-600 text-white hover:bg-black flex items-center"
             >
               <MdOutlinePersonAddAlt className="w-5 h-5" />
