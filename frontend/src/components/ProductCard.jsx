@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FiHeart } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 
 const ProductCard = ({ product }) => {
   const [isFavorite, setIsFavorite] = useState(false); // State to track if the product is a favorite
@@ -10,6 +11,8 @@ const ProductCard = ({ product }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-300 overflow-hidden transition-transform transform hover:scale-105">
+      {/* Wrap the card content with a Link */}
+      <Link to={"/product"}> 
       {/* Image Section */}
       <div className="w-full">
         <img
@@ -25,6 +28,7 @@ const ProductCard = ({ product }) => {
         <h3 className="text-center text-lg font-medium text-black mb-2">
           {product.name}
         </h3>
+       
 
         {/* Price and Heart */}
         <div className="flex items-center justify-between">
@@ -39,6 +43,7 @@ const ProductCard = ({ product }) => {
           </button>
         </div>
       </div>
+      </Link>
     </div>
   );
 };
@@ -91,3 +96,4 @@ export default ProductCard;
 
 
 
+  
