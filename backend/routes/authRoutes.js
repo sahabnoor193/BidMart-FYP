@@ -1,6 +1,6 @@
 const express = require("express");
 const passport = require("passport");
-const { register, login, googleLogin, facebookLogin } = require("../controllers/authController");
+const { register, login, googleLogin, facebookLogin, verifyEmail } = require("../controllers/authController");
 
 const router = express.Router();
 
@@ -14,5 +14,7 @@ router.get("/google/callback", passport.authenticate("google", { session: false 
 // Facebook OAuth
 router.get("/facebook", passport.authenticate("facebook", { scope: ["email"] }));
 router.get("/facebook/callback", passport.authenticate("facebook", { session: false }), facebookLogin);
+
+router.get("/verify-email", verifyEmail);
 
 module.exports = router;
