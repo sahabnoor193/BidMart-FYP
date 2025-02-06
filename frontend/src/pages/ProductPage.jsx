@@ -7,7 +7,6 @@ import Details from '../components/Details';
 import BidProfile from '../components/BidProfile';
 import ContactInfo from '../components/ContactInfo';
 import PreviousBids from '../components/PreviousBids';
-import Breadcrumbs from '../components/BreadCrumbs';
 
 const ProductPage = () => {
   const productData = {

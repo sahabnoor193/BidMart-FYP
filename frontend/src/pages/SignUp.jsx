@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
 import { AiFillEye, AiFillEyeInvisible, AiOutlineQuestionCircle } from "react-icons/ai";
 import sign from "../assets/signup.jpeg";
-import { Link } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+// import { registerUser } from "../api";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,6 +11,56 @@ const Signup = () => {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    type: 'buyer' // Default value
+  });
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Store the token in localStorage
+        localStorage.setItem('token', data.token);
+        navigate('/');
+      } else {
+        alert(data.message || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred during registration');
+    }
+  };
+
+// const handleSubmit = async (e) => {
+//   e.preventDefault();
+//   try {
+//     const data = await registerUser(formData);
+//     if (data.token) {
+//       localStorage.setItem('token', data.token);
+//       navigate('/');
+//     } else {
+//       alert(data.message || 'Registration failed');
+//     }
+//   } catch (error) {
+//     console.error('Error:', error);
+//     alert('An error occurred during registration');
+//   }
+// };
 
   return (
     <div className="min-h-screen bg-white mt-16 flex flex-col md:flex-row">
@@ -29,7 +80,7 @@ const Signup = () => {
             Create An Account
           </h2>
 
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="name" className="block text-gray-700 font-medium mb-1">
                 Name:
@@ -40,6 +91,7 @@ const Signup = () => {
                 placeholder="Your Name"
                 className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
               />
             </div>
 
@@ -53,6 +105,7 @@ const Signup = () => {
                 placeholder="Your Email"
                 className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
               />
             </div>
 
@@ -66,6 +119,7 @@ const Signup = () => {
                   placeholder="Your Password"
                   className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
                 />
                 <span
                   className="absolute inset-y-0 right-8 flex items-center text-gray-500 cursor-pointer"
@@ -83,7 +137,9 @@ const Signup = () => {
               <label className="block text-gray-700 font-medium mb-1">
                 Type:
               </label>
-              <select className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.type} 
+              onChange={(e) => setFormData({...formData, type: e.target.value})} >
                 <option value="seller">Seller</option>
                 <option value="buyer">Buyer</option>
               </select>
@@ -118,12 +174,19 @@ const Signup = () => {
             </div>
 
             <div className="flex justify-center space-x-4">
+              
+              <a href="http://localhost:5000/api/auth/google" >
               <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
                 <FaFacebook size={20} className="mr-2" /> Facebook
               </button>
+              </a>
+
+              <a href="http://localhost:5000/api/auth/facebook" >
               <button className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300">
                 <FaGoogle size={20} className="mr-2" /> Google
               </button>
+              </a>
+
             </div>
           </form>
 
