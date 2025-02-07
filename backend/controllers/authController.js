@@ -182,16 +182,19 @@ exports.facebookLogin = async (req, res) => {
 
 exports.verifyOTP = async (req, res) => {
   try {
-    const { email, otp, name, password, type } = req.body; // ✅ Ensure name is included
+    const { email, otp, name, password, type } = req.body;
 
-    // ✅ Check if OTP exists in Verification collection
+    console.log("🔹 Received OTP verification request:", { email, otp, name, password, type });
+
+    // ✅ Find OTP in database
     const verificationEntry = await Verification.findOne({ email, otp });
     if (!verificationEntry) {
+      console.log("❌ OTP Verification Failed: Invalid or expired OTP.");
       return res.status(400).json({ message: "Invalid OTP or OTP expired." });
     }
 
-    // ✅ Choose Buyer or Seller model
-    const UserModel = verificationEntry.type === "buyer" ? Buyer : Seller;
+    // ✅ Select User Model
+    const UserModel = type === "buyer" ? Buyer : Seller;
 
     // ✅ Check if user already exists
     let existingUser = await UserModel.findOne({ email });
@@ -199,24 +202,19 @@ exports.verifyOTP = async (req, res) => {
       return res.status(400).json({ message: "User already verified. Please log in." });
     }
 
-    // ✅ Ensure name is provided
-    if (!name) {
-      return res.status(400).json({ message: "Name is required to create an account." });
-    }
+    // ✅ Hash password before saving (Use bcrypt in production)
+    const hashedPassword = password; // Ideally use bcrypt.hash(password, 10)
 
-    // ✅ Hash password before saving (For security)
-    const hashedPassword = password; // Use bcrypt.hash(password, 10) in production
-
-    // ✅ Create and save the new user
-    const newUser = new UserModel({ name, email, password: hashedPassword });
+    // ✅ Create user account
+    const newUser = new UserModel({ name, email, password: hashedPassword, type });
     await newUser.save();
 
-    console.log("✅ User Verified & Account Created:", email);
+    console.log("✅ OTP Verified & Account Created:", email);
 
-    // ✅ Delete OTP from Verification collection
+    // ✅ Delete OTP after successful verification
     await Verification.deleteOne({ email });
 
-    res.status(200).json({ message: "Account created successfully! You can now log in." });
+    res.status(200).json({ message: "Account verified successfully! You can now log in." });
   } catch (error) {
     console.error("❌ OTP Verification Error:", error);
     res.status(500).json({ error: "Server Error: " + error.message });

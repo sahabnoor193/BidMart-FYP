@@ -22,36 +22,36 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-      // ✅ Check if email ends with "@gmail.com"
+  
     if (!formData.email.endsWith("@gmail.com")) {
       alert("Only Google emails (@gmail.com) are allowed.");
       return;
     }
-
+  
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
+      const response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-
+  
       const data = await response.json();
-      
+  
       if (response.ok) {
-        // Store the token in localStorage
-        localStorage.setItem('token', data.token);
-        navigate('/');
+        localStorage.setItem("email", formData.email);
+        localStorage.setItem("name", formData.name);
+        localStorage.setItem("password", formData.password); // ✅ Store password temporarily
+        localStorage.setItem("type", formData.type);
+  
+        navigate("/otp-verification");
       } else {
-        alert(data.message || 'Registration failed');
+        alert(data.message || "Registration failed");
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('An error occurred during registration');
+      console.error("Error:", error);
+      alert("An error occurred during registration");
     }
-  };
+  };   
 
 // const handleSubmit = async (e) => {
 //   e.preventDefault();

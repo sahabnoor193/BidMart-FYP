@@ -8,6 +8,7 @@ import Signup from './pages/SignUp'
 import SignIn from './pages/SignIn'
 import FavouriteBids from './pages/FavouriteBids'
 import ProductPage from './pages/ProductPage'
+import OtpVerification from "./pages/OtpVerification";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/favouritebids" element={<FavouriteBids />} />
             <Route path="/product" element={<ProductPage/>} />
+            <Route path="/otp-verification" element={<OtpVerification />} />
           </Routes>
         </main>
         <Footer />
