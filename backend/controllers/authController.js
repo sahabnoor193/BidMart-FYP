@@ -4,7 +4,45 @@ const Buyer = require("../models/Buyer");
 const Seller = require("../models/Seller");
 const crypto = require("crypto");
 const Verification = require("../models/Verification"); // Create this model
-const { sendVerificationEmail } = require("../services/emailService");
+const { sendOTPEmail } = require("../services/emailService"); // Import email service
+
+// exports.register = async (req, res) => {
+//   try {
+//     console.log("🔹 Received Registration Request:", req.body);
+
+//     const { name, email, password, type } = req.body;
+
+//     // ✅ Validate Email Format
+//     if (!email.endsWith("@gmail.com")) {
+//       console.log("❌ Invalid Email: ", email);
+//       return res.status(400).json({ message: "Only Google emails (@gmail.com) are allowed." });
+//     }
+
+//     const UserModel = type === "buyer" ? Buyer : Seller;
+
+//     // ✅ Check if Email Already Exists
+//     let existingUser = await UserModel.findOne({ email });
+//     if (existingUser) {
+//       console.log("❌ User Already Exists:", email);
+//       return res.status(400).json({ message: "User already exists. Please log in." });
+//     }
+
+//     // ✅ Generate Verification Token
+//     const verificationToken = crypto.randomBytes(32).toString("hex");
+//     console.log("✅ Generated Token:", verificationToken);
+
+//     // ✅ Save verification entry with type
+//     await Verification.create({ email, token: verificationToken, type });
+
+//     console.log("📧 Sending Email to:", email);
+//     await sendVerificationEmail(email, verificationToken);
+
+//     res.status(201).json({ message: "Verification email sent. Please check your inbox." });
+//   } catch (error) {
+//     console.error("❌ Registration Error:", error);
+//     res.status(500).json({ error: "Server Error: " + error.message });
+//   }
+// };
 
 exports.register = async (req, res) => {
   try {
@@ -12,30 +50,41 @@ exports.register = async (req, res) => {
 
     const { name, email, password, type } = req.body;
 
+    // ✅ Validate Email Format
     if (!email.endsWith("@gmail.com")) {
-      console.log("❌ Invalid Email: ", email);
-      return res.status(400).json({ message: "Only Google emails are allowed" });
+      return res.status(400).json({ message: "Only Google emails (@gmail.com) are allowed." });
     }
 
     const UserModel = type === "buyer" ? Buyer : Seller;
 
-    let user = await UserModel.findOne({ email });
-    if (user) {
-      console.log("❌ User Already Exists:", email);
-      return res.status(400).json({ message: "User already exists" });
+    // ✅ Check if Email Already Exists
+    let existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists. Please log in." });
     }
 
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    console.log("✅ Generated Token:", verificationToken);
+    // ✅ Generate New OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("✅ Generated OTP:", otp);
 
-    // Save to database
-    await Verification.create({ email, token: verificationToken });
+    // ✅ Check if OTP already exists for this user
+    let verificationEntry = await Verification.findOne({ email });
 
-    console.log("📧 Sending Email to:", email);
-    await sendVerificationEmail(email, verificationToken);
+    if (verificationEntry) {
+      // ✅ Update existing OTP and reset expiration time
+      verificationEntry.otp = otp;
+      verificationEntry.createdAt = new Date(); // Reset expiration time
+      await verificationEntry.save();
+    } else {
+      // ✅ Save New OTP in Verification Collection
+      await Verification.create({ email, otp, type });
+    }
 
-    res.status(200).json({ message: "Verification email sent. Please check your inbox." });
+    // ✅ Send OTP via Email
+    console.log("📧 Sending OTP to:", email);
+    await sendOTPEmail(email, otp); // Call email service to send OTP
+
+    res.status(201).json({ message: "OTP sent. Please check your email." });
   } catch (error) {
     console.error("❌ Registration Error:", error);
     res.status(500).json({ error: "Server Error: " + error.message });
@@ -101,29 +150,105 @@ exports.facebookLogin = async (req, res) => {
   res.redirect(`http://localhost:3000?token=${token}`);
 };
 
-exports.verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.query;
-    const verificationEntry = await Verification.findOne({ token });
+// exports.verifyEmail = async (req, res) => {
+//   try {
+//     const { token } = req.query;
+//     const verificationEntry = await Verification.findOne({ token });
 
+//     if (!verificationEntry) {
+//       return res.status(400).json({ message: "Invalid or expired verification token." });
+//     }
+
+//     const { email, type } = verificationEntry; // ✅ Retrieve type from verification entry
+
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash("defaultPassword123", salt); // Temporary default password
+
+//     // ✅ Choose model based on type
+//     const UserModel = type === "buyer" ? Buyer : Seller;
+
+//     let user = new UserModel({ name: "User", email, password: hashedPassword, provider: "local" });
+//     await user.save();
+
+//     // ✅ Delete verification entry after successful signup
+//     await Verification.deleteOne({ email });
+
+//     res.status(200).json({ message: "Email verified! Account created successfully." });
+//   } catch (error) {
+//     console.error("❌ Email Verification Error:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { email, otp, name, password, type } = req.body; // ✅ Ensure name is included
+
+    // ✅ Check if OTP exists in Verification collection
+    const verificationEntry = await Verification.findOne({ email, otp });
     if (!verificationEntry) {
-      return res.status(400).json({ message: "Invalid or expired verification token" });
+      return res.status(400).json({ message: "Invalid OTP or OTP expired." });
     }
 
-    // Hash password (use a default or request user to set it later)
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash("defaultPassword123", salt); // Default password for now
+    // ✅ Choose Buyer or Seller model
+    const UserModel = verificationEntry.type === "buyer" ? Buyer : Seller;
 
-    // Create user after verification
-    let user = new Buyer({ name: "User", email: verificationEntry.email, password: hashedPassword });
-    await user.save();
+    // ✅ Check if user already exists
+    let existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already verified. Please log in." });
+    }
 
-    // Delete verification entry
-    await Verification.deleteOne({ email: verificationEntry.email });
+    // ✅ Ensure name is provided
+    if (!name) {
+      return res.status(400).json({ message: "Name is required to create an account." });
+    }
 
-    res.status(200).json({ message: "Email verified! Account created successfully." });
+    // ✅ Hash password before saving (For security)
+    const hashedPassword = password; // Use bcrypt.hash(password, 10) in production
+
+    // ✅ Create and save the new user
+    const newUser = new UserModel({ name, email, password: hashedPassword });
+    await newUser.save();
+
+    console.log("✅ User Verified & Account Created:", email);
+
+    // ✅ Delete OTP from Verification collection
+    await Verification.deleteOne({ email });
+
+    res.status(200).json({ message: "Account created successfully! You can now log in." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("❌ OTP Verification Error:", error);
+    res.status(500).json({ error: "Server Error: " + error.message });
   }
 };
 
+exports.resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // ✅ Check if OTP exists
+    let verificationEntry = await Verification.findOne({ email });
+
+    if (!verificationEntry) {
+      return res.status(400).json({ message: "No OTP request found for this email. Please register first." });
+    }
+
+    // ✅ Generate a New OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("🔄 Resending OTP:", otp);
+
+    // ✅ Update OTP and Reset Expiration
+    verificationEntry.otp = otp;
+    verificationEntry.createdAt = new Date(); // Reset expiration time
+    await verificationEntry.save();
+
+    // ✅ Send the new OTP via email
+    await sendOTPEmail(email, otp);
+
+    res.status(200).json({ message: "New OTP sent to your email." });
+  } catch (error) {
+    console.error("❌ Resend OTP Error:", error);
+    res.status(500).json({ error: "Server Error: " + error.message });
+  }
+};

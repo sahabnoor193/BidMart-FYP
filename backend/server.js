@@ -10,11 +10,14 @@ const connectDB = require("../backend/config/db");
 // Middleware
 app.use(express.json());
 // Allow both frontend ports
-const corsOptions = {
-  origin: ['http://localhost:5000', 'http://localhost:5173'], // Add your frontend URL
-  credentials: true,  // Allows cookies & authentication headers
-};
-app.use(cors(corsOptions));
+// const corsOptions = {
+//   origin: ['http://localhost:5000', 'http://localhost:5173'], // Add your frontend URL
+//   credentials: true,  // Allows cookies & authentication headers
+// };
+
+app.use(cors());
+
+// app.use(cors(corsOptions));
 app.use(cookieParser());
 
 connectDB();

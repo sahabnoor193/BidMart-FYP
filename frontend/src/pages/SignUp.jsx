@@ -22,6 +22,13 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+      // ✅ Check if email ends with "@gmail.com"
+    if (!formData.email.endsWith("@gmail.com")) {
+      alert("Only Google emails (@gmail.com) are allowed.");
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
