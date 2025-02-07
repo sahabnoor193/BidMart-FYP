@@ -94,24 +94,35 @@ exports.register = async (req, res) => {
 // Login User
 exports.login = async (req, res) => {
   try {
-    const { email, password, type } = req.body;
+    const { email, password, type } = req.body; // ✅ Make sure type is included
 
-    let UserModel = type === "buyer" ? Buyer : Seller;
+    console.log("🔹 Login request received:", { email, type });
 
+    // ✅ Determine whether user is a Buyer or Seller
+    const UserModel = type === "buyer" ? Buyer : Seller;
+
+    // ✅ Check if the user exists
     let user = await UserModel.findOne({ email });
+
     if (!user) {
+      console.log("❌ User not found:", email);
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
+    // ✅ Check if password is correct
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log("❌ Incorrect password for:", email);
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
+    // ✅ Generate JWT Token
     const token = jwt.sign({ id: user.id, type }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
+    console.log("✅ User logged in:", email);
     res.status(200).json({ message: "Login successful", token });
   } catch (error) {
+    console.error("❌ Login Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -190,22 +201,20 @@ exports.verifyOTP = async (req, res) => {
     const verificationEntry = await Verification.findOne({ email, otp });
     if (!verificationEntry) {
       console.log("❌ OTP Verification Failed: Invalid or expired OTP.");
-      return res.status(400).json({ message: "Invalid OTP or OTP expired." });
+      return res.status(400).json({ message: "Invalid OTP or expired OTP" });
     }
 
     // ✅ Select User Model
     const UserModel = type === "buyer" ? Buyer : Seller;
 
-    // ✅ Check if user already exists
     let existingUser = await UserModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already verified. Please log in." });
     }
 
-    // ✅ Hash password before saving (Use bcrypt in production)
-    const hashedPassword = password; // Ideally use bcrypt.hash(password, 10)
+    // ✅ Hash password before saving (Important!)
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Create user account
     const newUser = new UserModel({ name, email, password: hashedPassword, type });
     await newUser.save();
 
@@ -214,10 +223,10 @@ exports.verifyOTP = async (req, res) => {
     // ✅ Delete OTP after successful verification
     await Verification.deleteOne({ email });
 
-    res.status(200).json({ message: "Account verified successfully! You can now log in." });
+    res.status(200).json({ message: "Account verified successfully! Please log in." });
   } catch (error) {
     console.error("❌ OTP Verification Error:", error);
-    res.status(500).json({ error: "Server Error: " + error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
