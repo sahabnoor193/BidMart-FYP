@@ -1,15 +1,19 @@
 const express = require("express");
 const passport = require("passport");
-const { register, login, googleLogin, facebookLogin, verifyOTP, resendOTP } = require("../controllers/authController");
+const { register, login, googleLogin, facebookLogin, verifyOTP, resendOTP, logout, loginStatus, googleRegister } = require("../controllers/authController");
 
 const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
+router.post("/logout", logout);
+router.get("/login-status", loginStatus);
 
 // Google OAuth
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-router.get("/google/callback", passport.authenticate("google", { session: false }), googleLogin);
+router.get("/session-data", (req, res) => {
+  res.json(req.session.tempUser || {});
+});
+router.post("/register-google", googleRegister);
 
 // Facebook OAuth
 router.get("/facebook", passport.authenticate("facebook", { scope: ["email"] }));

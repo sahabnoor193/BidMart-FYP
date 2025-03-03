@@ -122,7 +122,8 @@ import { useNavigate } from "react-router-dom";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
 import { AiFillEye, AiFillEyeInvisible, AiOutlineQuestionCircle } from "react-icons/ai";
 import signinImage from "../assets/signup.jpeg";
-
+import { jwtDecode } from "jwt-decode"; // ✅ Correct// ✅ Install with: npm install jwt-decode
+ 
 const SignIn = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -136,6 +137,36 @@ const SignIn = ({ setIsAuthenticated }) => {
   };
 
   // ✅ Function to Handle Email/Password Login
+  // const handleLogin = async (e) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   setError("");
+
+  //   try {
+  //     const response = await fetch("http://localhost:5000/api/auth/login", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ email, password }),
+  //     });
+
+  //     const data = await response.json();
+  //     setLoading(false);
+
+  //     if (response.ok) {
+  //       alert("Login successful!");
+  //       localStorage.setItem("token", data.token);
+  //       localStorage.setItem("userEmail", email);
+  //       setIsAuthenticated(true);
+  //       navigate("/");
+  //     } else {
+  //       setError(data.message || "Invalid email or password.");
+  //     }
+  //   } catch (err) {
+  //     console.error("❌ Error logging in:", err);
+  //     setError("An error occurred while logging in.");
+  //     setLoading(false);
+  //   }
+  // };
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -153,10 +184,26 @@ const SignIn = ({ setIsAuthenticated }) => {
 
       if (response.ok) {
         alert("Login successful!");
+
         localStorage.setItem("token", data.token);
         localStorage.setItem("userEmail", email);
+        localStorage.setItem("userType", data.type);
+        localStorage.setItem("userName", data.name);
         setIsAuthenticated(true);
-        navigate("/");
+
+        // ✅ Decode the token to get user type
+        const decodedToken = jwtDecode(data.token);
+        const userType = decodedToken.type || "buyer"; // Default to buyer if type is missing
+
+        localStorage.setItem("userType", userType);
+        setIsAuthenticated(true);
+
+        // ✅ Redirect based on user type
+        if (userType === "seller") {
+          navigate("/seller-dashboard"); // Redirect to Seller Dashboard
+        } else {
+          navigate("/dashboard"); // Redirect to Buyer Dashboard
+        }
       } else {
         setError(data.message || "Invalid email or password.");
       }
