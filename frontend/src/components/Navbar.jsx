@@ -1,55 +1,69 @@
-// src/components/Navbar.jsx
-import { Link } from 'react-router-dom';
-import { FiSearch, FiShoppingCart } from 'react-icons/fi';
+import { Link , useLocation } from 'react-router-dom';
+import { FiSearch, FiShoppingCart,FiHeart } from 'react-icons/fi';
 import { MdOutlinePersonAddAlt } from 'react-icons/md';
-import { HiMenu, HiX } from 'react-icons/hi'; // Icons for the hamburger menu
-import Logo from '/assets/Logo.png';
+import { HiMenu, HiX } from 'react-icons/hi';
+import Logo from '../assets/Logo.png';
 import { useState } from 'react';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+   // Get the current location
+   const location = useLocation();
+
+   // Check if the current page is /favouritesBids
+   const isOnFavoritesPage = location.pathname === '/favouritesBids';
+
   return (
-    <nav className="bg-white shadow-md fixed w-full z-50">
-      <div className="max-w-7xl mx-auto px-0 sm:px-2 lg:px-4">
-        <div className="flex justify-between h-16 items-center">
-          {/* Logo and Brand Name */}
-          <div className="flex items-center space-x-3">
+    <nav className="bg-white text-gray-800 shadow-md fixed w-full z-50">
+      <div className="max-w-7xl mx-auto px-4">
+      {/* px-4 sm:px-6 lg:px-8 */}
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img src={Logo} alt="Logo" className="h-8 w-8 object-contain" />
-              <span className="text-2xl font-bold text-gray-900 ml-2">BidMart</span>
+              <span className="text-2xl font-bold ml-2">BidMart</span>
             </Link>
           </div>
 
-          {/* Navigation Links for larger screens */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-gray-900">Home</Link>
-            <Link to="/contact" className="text-gray-700 hover:text-gray-900">Contact</Link>
-            <Link to="/about" className="text-gray-700 hover:text-gray-900">About</Link>
-            <Link to="/" className="text-gray-700 hover:text-gray-900">Bids</Link>
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center space-x-6">
+            <Link to="/" className="hover:text-gray-600">Home</Link>
+            <Link to="/products" className="hover:text-gray-600">Contact</Link>
+            <Link to="/prebuilds" className="hover:text-gray-600">About</Link>
+            <Link to="/faqs" className="hover:text-gray-600">FAQs</Link>
           </div>
 
-          {/* Search, Cart, and Sign-Up */}
-          <div className="flex items-center space-x-4">
+          {/* Actions */}
+          <div className="hidden md:flex items-center space-x-1">
             <button className="p-2 rounded-full hover:bg-gray-100">
               <FiSearch className="w-5 h-5" />
             </button>
             <button className="p-2 rounded-full hover:bg-gray-100">
               <FiShoppingCart className="w-5 h-5" />
             </button>
+            {/* Heart Button with Conditional Color */}
+            <Link to="/favouritebids">
+              <button className="p-2 rounded-full hover:bg-gray-100">
+                <FiHeart 
+                  className={`w-5 h-5 ${isOnFavoritesPage ? 'text-red-500' : 'text-gray-600'}`} 
+                />
+              </button>
+            </Link>
             <Link
               to="/signup"
-              className="p-2 rounded-full bg-black text-white hover:bg-gray-800 flex items-center justify-center"
+              className="p-2 rounded-full bg-red-600 text-white hover:bg-black flex items-center"
             >
               <MdOutlinePersonAddAlt className="w-5 h-5" />
             </Link>
           </div>
 
-          {/* Hamburger Menu Button for smaller screens */}
-          <div className="md:hidden flex items-center">
+          {/* Hamburger Menu */}
+          <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-900 p-2 rounded-md focus:outline-none"
+              className="text-black p-2 rounded-md focus:outline-none"
             >
               {isMenuOpen ? <HiX className="w-6 h-6" /> : <HiMenu className="w-6 h-6" />}
             </button>
@@ -57,34 +71,16 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Dropdown Menu for smaller screens */}
+      {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white/80 backdrop-blur-lg shadow-lg absolute w-full">
-          <div className="flex flex-col items-start px-4 py-4 space-y-4">
-            <Link
-              to="/"
-              className="text-gray-700 hover:text-gray-900 text-lg font-medium"
-            >
-              Home
-            </Link>
-            <Link
-              to="/contact"
-              className="text-gray-700 hover:text-gray-900 text-lg font-medium"
-            >
-              Contact
-            </Link>
-            <Link
-              to="/about"
-              className="text-gray-700 hover:text-gray-900 text-lg font-medium"
-            >
-              About
-            </Link>
-            <Link
-              to="/"
-              className="text-gray-700 hover:text-gray-900 text-lg font-medium"
-            >
-              Bids
-            </Link>
+        <div className="md:hidden bg-white shadow-lg absolute top-16 left-0 w-full">
+          <div className="flex flex-col items-start px-6 py-4 space-y-4">
+            <Link to="/" className="text-black hover:text-gray-600">Home</Link>
+            <Link to="/products" className="text-black hover:text-gray-600">Products</Link>
+            <Link to="/prebuilds" className="text-black hover:text-gray-600">Prebuilds</Link>
+            <Link to="/faqs" className="text-black hover:text-gray-600">FAQs</Link>
+            <Link to="/wishlist" className="text-black hover:text-gray-600">Wishlist</Link>
+            <Link to="/login" className="text-black hover:text-gray-600">Login / Register</Link>
           </div>
         </div>
       )}

@@ -11,6 +11,9 @@ export default {
         secondary: '#457B9D', // Secondary color
         accent: '#1D3557', // Optional accent color
       },
+      screens: {
+        'xs': '475px',
+      },
     },
   },
   plugins: [],

@@ -3,7 +3,8 @@ import React from 'react';
 import Hero from '../components/Hero';
 import LatestBids from '../components/LatestBids';
 import Categories from '../components/Categories';
-import CustomerReviews from '../components/CustomerReviews';
+import ExploreBids from '../components/ExploreBids';
+import Testimonials from '../components/Testimonials';
 
 function Home() {
   return (
@@ -11,7 +12,8 @@ function Home() {
       <Hero />
       <LatestBids />
       <Categories />
-      <CustomerReviews />
+      <ExploreBids />
+      <Testimonials />
     </div>
   );
 }
