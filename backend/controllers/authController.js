@@ -187,7 +187,7 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
     console.log("🔹 Login request received:", email);
 
@@ -223,10 +223,11 @@ exports.login = async (req, res) => {
       userType = "buyer"; // If both accounts exist, default to buyer
     }
     // ✅ Generate JWT Token
+    // Update token expiration based on remember me
     const token = jwt.sign(
       { id: user.id, type: userType },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: rememberMe ? "30d" : "1d" } // 30 days if checked, 1 day if not
     );
     console.log("✅ User logged in:", email, "as", userType);
     res.status(200).json({ message: "Login successful", token, type: userType });
@@ -515,35 +516,4 @@ exports.switchAccount = async (req, res) => {
     }
   };
 
-  exports.getUser = async (req, res) => {
-    try {
-      const user = await User.findById(req.user.id).select("-password");
-
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      res.status(200).json(user);
-    } catch (error) {
-      console.error("❌ Get User Error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  };
-
-  exports.logout = (req, res) => {
-    try {
-      res.cookie("token", "", {
-        path: "/",
-        httpOnly: true,
-        expires: new Date(0),
-        sameSite: "none",
-        secure: true,
-      });
-
-      return res.status(200).json({ message: "Successfully Logged Out" });
-    } catch (error) {
-      console.error("❌ Logout Error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  };
 

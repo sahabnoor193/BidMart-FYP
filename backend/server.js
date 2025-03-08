@@ -9,6 +9,7 @@ const session = require('express-session');
 const passport = require('passport');
 const errorHandler = require("./middleware/errorMiddleware");
 const sellerRoutes = require("./routes/seller");
+const buyerRoutes = require("./routes/buyer");
 const userRoutes = require("./routes/user");
 
 app.use(session({
@@ -40,6 +41,8 @@ connectDB();
 app.use("/api/auth", authRoutes);
 app.use("/api/seller", sellerRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/buyer", buyerRoutes);
+
 
 app._router.stack.forEach((r) => {
   if (r.route && r.route.path) {
