@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/authMiddleware");
-const { getUserProfile, updateUserProfile, changeUserPassword } = require("../controllers/userController");
+const { getUserProfile, updateUserProfile, changeUserPassword , switchAccount} = require("../controllers/userController");
 
 // @route   GET /api/user/profile
 // @desc    Get user profile
@@ -17,5 +17,7 @@ router.put("/profile", auth, updateUserProfile);
 // @desc    Change user password
 // @access  Private
 router.put("/password", auth, changeUserPassword);
+
+router.put("/switch-account", auth, switchAccount);
 
 module.exports = router;

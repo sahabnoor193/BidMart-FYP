@@ -384,6 +384,7 @@ exports.facebookLogin = async (req, res) => {
 //     res.status(500).json({ error: error.message });
 //   }
 // };
+
 exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp, name, password, type } = req.body;
@@ -456,47 +457,6 @@ exports.resendOTP = async (req, res) => {
   }
 };
 
-//Switch Account
-exports.switchAccount = async (req, res) => {
-  try {
-    console.log("🔹 Received Switch Account Request:", req.user.email);
-
-    const { email, currentType } = req.body;
-    const newType = currentType === "buyer" ? "seller" : "buyer"; // 👈 Switch type
-
-    // ✅ Check if an Account with the Opposite Type Exists
-    let oppositeUser = await User.findOne({ email, type: newType });
-
-    if (oppositeUser) {
-      return res.status(200).json({
-        message: `Switched to ${newType} account.`,
-        user: oppositeUser,
-      });
-    }
-
-    // ✅ If Opposite Account Does Not Exist, Create a New One
-    let existingUser = await User.findOne({ email, type: currentType });
-
-    if (!existingUser) {
-      return res.status(400).json({ message: "User not found." });
-    }
-
-    const newUser = new User({
-      name: existingUser.name,
-      email: existingUser.email,
-      password: existingUser.password,
-      type: newType,
-    });
-
-    await newUser.save();
-
-    res.status(201).json({ message: `New ${newType} account created.`, user: newUser });
-  } catch (error) {
-    console.error("❌ Switch Account Error:", error);
-    res.status(500).json({ error: "Server Error: " + error.message });
-  }
-};
-
   exports.loginStatus = (req, res) => {
     try {
       const token = req.cookies.token;
@@ -515,5 +475,6 @@ exports.switchAccount = async (req, res) => {
       return res.json(false);
     }
   };
+
 
 

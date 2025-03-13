@@ -22,7 +22,7 @@ const Signup = ({ setIsAuthenticated }) => {
       if (userType === "seller") {
         navigate("/seller-dashboard");
       } else {
-        navigate("/dashboard");
+        navigate("/buyer-dashboard");
       }
     }
   }, [navigate]);

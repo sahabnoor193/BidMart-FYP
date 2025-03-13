@@ -92,27 +92,68 @@ const SellerDashboard = () => {
 
   // Add handler for switching user type
   const handleSwitchUserType = async () => {
-    const newUserType = userType === 'seller' ? 'buyer' : 'seller';
     try {
       const token = localStorage.getItem('token');
-      await axios.put("http://localhost:5000/api/user/switch-role", 
-        { newRole: newUserType },
-        { headers: { Authorization: `Bearer ${token}` }}
+      const userEmail = localStorage.getItem('userEmail');
+      const currentType = localStorage.getItem('userType');
+      const newType = currentType === 'buyer' ? 'seller' : 'buyer';
+  
+      // Check if opposite account exists
+      const response = await axios.put(
+        "http://localhost:5000/api/user/switch-account",
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      setUserType(newUserType);
-      localStorage.setItem('userType', newUserType);
-      
-      // Redirect to appropriate dashboard
-      if (newUserType === 'buyer') {
-        navigate('/buyer-dashboard');
+  
+      if (response.data.exists) {
+        // Switch to existing account
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('userType', response.data.userType);
+        window.location.href = `/${response.data.userType}-dashboard`;
       } else {
-        // Refresh the current page to show seller dashboard
-        window.location.reload();
+        // Ask user if they want to create a new account
+        const createNewAccount = window.confirm(`No ${newType} account found. Do you want to create a new ${newType} account?`);
+        if (createNewAccount) {
+          // Fetch current user profile
+          const profileResponse = await axios.get("http://localhost:5000/api/user/profile", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+  
+          const profile = profileResponse.data;
+  
+          // Create new account with opposite type
+          const registrationResponse = await axios.post("http://localhost:5000/api/auth/register", {
+            name: profile.name,
+            email: profile.email,
+            password: 'defaultPassword123', // You might want to handle password securely
+            type: newType
+          });
+  
+          if (registrationResponse.data.message) {
+            alert('Account created successfully. Please check your email for verification.');
+  
+            // Store account information in local storage
+            localStorage.setItem('email', profile.email);
+            localStorage.setItem('name', profile.name);
+            localStorage.setItem('password', 'defaultPassword123');
+            localStorage.setItem('type', newType);
+  
+            // Log out the current user
+            localStorage.removeItem('token');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userType');
+            localStorage.removeItem('userName');
+  
+            // Redirect to verification page
+            navigate('/otp-verification');
+          } else {
+            alert('Failed to create account. Please try again.');
+          }
+        }
       }
     } catch (err) {
-      console.error('Error switching user type:', err);
-      alert('Failed to switch user type. Please try again.');
+      console.error('Switch error:', err);
+      alert(err.response?.data?.message || 'Account switch failed');
     }
   };
 

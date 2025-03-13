@@ -81,30 +81,43 @@ const BuyerDashboard = () => {
 
     // Add handler for switching user type
     const handleSwitchUserType = async () => {
-        const newUserType = userType === 'seller' ? 'buyer' : 'seller';
-        try {
-          const token = localStorage.getItem('token');
-          await axios.put("http://localhost:5000/api/user/switch-role", 
-            { newRole: newUserType },
-            { headers: { Authorization: `Bearer ${token}` }}
-          );
-          
-          setUserType(newUserType);
-          localStorage.setItem('userType', newUserType);
-          
-          // Redirect to appropriate dashboard
-          if (newUserType === 'buyer') {
-            navigate('/buyer-dashboard');
+      try {
+        const token = localStorage.getItem('token');
+        const userEmail = localStorage.getItem('userEmail');
+        const currentType = localStorage.getItem('userType');
+        const newType = currentType === 'buyer' ? 'seller' : 'buyer';
+    
+        // Check if opposite account exists
+        const response = await axios.put(
+          "http://localhost:5000/api/user/switch-account",
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+    
+        if (response.data.exists) {
+          // Switch to existing account
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('userType', response.data.userType);
+          window.location.href = `/${response.data.userType}-dashboard`;
+        } else {
+          // Create new account
+          const verificationResponse = await axios.post("http://localhost:5000/api/verification", {
+            email: userEmail,
+            type: newType
+          });
+    
+          if (verificationResponse.data.error) {
+            alert(verificationResponse.data.error);
           } else {
-            // Refresh the current page to show seller dashboard
-            window.location.reload();
-          }
-        } catch (err) {
-          console.error('Error switching user type:', err);
-          alert('Failed to switch user type. Please try again.');
+            alert('Account switch initiated. Please check your email for verification.');
         }
-      };
-
+        }
+      } catch (err) {
+        console.error('Switch error:', err);
+        alert(err.response?.data?.message || 'Account switch failed');
+      }
+    };
+    
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     try {
