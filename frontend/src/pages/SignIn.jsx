@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
-import { AiFillEye, AiFillEyeInvisible, AiOutlineQuestionCircle } from "react-icons/ai";
+import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import signinImage from "../assets/signup.jpeg";
-import { jwtDecode } from "jwt-decode"; // ✅ Correct// ✅ Install with: npm install jwt-decode
- 
+import {jwtDecode} from "jwt-decode"; // ✅ Correct import
+
 const SignIn = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,37 +18,6 @@ const SignIn = ({ setIsAuthenticated }) => {
     setShowPassword(!showPassword);
   };
 
-  // ✅ Function to Handle Email/Password Login
-  // const handleLogin = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-  //   setError("");
-
-  //   try {
-  //     const response = await fetch("http://localhost:5000/api/auth/login", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ email, password }),
-  //     });
-
-  //     const data = await response.json();
-  //     setLoading(false);
-
-  //     if (response.ok) {
-  //       alert("Login successful!");
-  //       localStorage.setItem("token", data.token);
-  //       localStorage.setItem("userEmail", email);
-  //       setIsAuthenticated(true);
-  //       navigate("/");
-  //     } else {
-  //       setError(data.message || "Invalid email or password.");
-  //     }
-  //   } catch (err) {
-  //     console.error("❌ Error logging in:", err);
-  //     setError("An error occurred while logging in.");
-  //     setLoading(false);
-  //   }
-  // };
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -58,7 +27,7 @@ const SignIn = ({ setIsAuthenticated }) => {
       const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, rememberMe}),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await response.json();
@@ -97,7 +66,7 @@ const SignIn = ({ setIsAuthenticated }) => {
   };
 
   return (
-    <div className="min-h-screen bg-white mt-16 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-white flex flex-col md:flex-row">
       {/* Left Section (Image) */}
       <div className="md:w-1/2 hidden md:flex items-center justify-center">
         <img
@@ -147,17 +116,17 @@ const SignIn = ({ setIsAuthenticated }) => {
             </div>
 
             <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="remember" 
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
-              <label htmlFor="remember" className="text-sm text-gray-600 select-none">
-                Remember Me
-              </label>
-            </div>
+              <div className="flex items-center space-x-2">
+                <input 
+                  type="checkbox" 
+                  id="remember" 
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <label htmlFor="remember" className="text-sm text-gray-600 select-none">
+                  Remember Me
+                </label>
+              </div>
               <a href="#" className="text-sm text-blue-500 hover:underline">Forgot Password?</a>
             </div>
 
@@ -190,8 +159,7 @@ const SignIn = ({ setIsAuthenticated }) => {
             </a>
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-4">
-            Don't have an account?{" "}
+          <p className="text-center text-sm text-gray-500 mt-4"> Don't have an account?{" "}
             <a href="/signup" className="text-blue-500 hover:underline">Sign Up</a>
           </p>
         </div>

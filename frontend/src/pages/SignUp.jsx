@@ -97,7 +97,7 @@ const Signup = ({ setIsAuthenticated }) => {
   };
 
   return (
-    <div className="min-h-screen bg-white mt-16 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-white flex flex-col md:flex-row">
       {/* Left Section (Image) */}
       <div className="md:w-1/2 hidden md:flex items-center justify-center">
         <img

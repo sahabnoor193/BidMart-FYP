@@ -2,6 +2,7 @@ const User = require("../models/User");
 const Verification = require("../models/Verification");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken"); // Add this line
+const { sendOTPEmail } = require("../services/emailService");
 
 exports.getUserProfile = async (req, res) => {
   try {
@@ -97,5 +98,103 @@ exports.switchAccount = async (req, res) => {
       error: "Server Error",
       details: error.message
     });
+  }
+};
+
+exports.switchRegister = async (req, res) => {
+  try {
+    console.log("🔹 Received Registration Request:", req.body);
+
+    const { name, email, password, type } = req.body;
+
+    if (!name || !email || !password || !type) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // ✅ Validate Email Format
+    if (!email.endsWith("@gmail.com")) {
+      return res.status(400).json({ message: "Only Google emails (@gmail.com) are allowed." });
+    }
+
+    // ✅ Check if the user has already registered with the same email and type
+    let existingUser = await User.findOne({ email, type });
+
+    if (existingUser) {
+      return res.status(400).json({ message: `You have already registered as a ${type}. Please log in.` });
+    }
+
+    // ✅ Generate New OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("✅ Generated OTP:", otp);
+
+    // ✅ Check if OTP already exists for this user type
+    let verificationEntry = await Verification.findOne({ email, type });
+
+    if (verificationEntry) {
+      verificationEntry.otp = otp;
+      verificationEntry.createdAt = new Date(); // Reset expiration time
+      await verificationEntry.save();
+    } else {
+      await Verification.create({ email, otp, type });
+    }
+
+    // ✅ Send OTP via Email
+    console.log("📧 Sending OTP to:", email);
+    await sendOTPEmail(email, otp);
+
+    res.status(201).json({ message: `OTP sent for ${type} registration. Please check your email.` });
+
+  } catch (error) {
+    console.error("❌ Registration Error:", error);
+    res.status(500).json({ error: "Server Error: " + error.message });
+  }
+};
+
+exports.switchVerifyOTP = async (req, res) => {
+  try {
+    const { email, otp, name, password, type } = req.body;
+
+    console.log("🔹 Received OTP verification request:", { email, otp, name, password, type });
+
+    // ✅ Find OTP in database (must match email & type)
+    const verificationEntry = await Verification.findOne({ email, otp, type });
+
+    if (!verificationEntry) {
+      console.log("❌ OTP Verification Failed: Invalid or expired OTP.");
+      return res.status(400).json({ message: "Invalid OTP or expired OTP" });
+    }
+
+    // ✅ Ensure a user with the same email & type does not already exist
+    let existingUser = await User.findOne({ email, type });
+
+    if (existingUser) {
+      return res.status(400).json({ message: `You are already verified as a ${type}. Please log in.` });
+    }
+
+    // ✅ Hash the password before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    console.log('✅ Password hashed successfully');
+
+    // ✅ Create and save the new user with a new `_id`
+    const newUser = new User({ name, email, password: hashedPassword, type });
+    await newUser.save();
+
+    console.log("✅ OTP Verified & Account Created:", email, type);
+
+    // ✅ Delete OTP entry for this specific email & type
+    await Verification.deleteOne({ email, type });
+
+    // ✅ Generate JWT Token
+    const token = jwt.sign(
+      { id: newUser.id, type: newUser.type },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(200).json({ message: "OTP verified. Logged in successfully", token, type: newUser.type });
+  } catch (error) {
+    console.error("❌ OTP Verification Error:", error);
+    res.status(500).json({ error: error.message });
   }
 };

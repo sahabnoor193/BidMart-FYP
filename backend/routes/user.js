@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const auth = require("../middleware/authMiddleware");
-const { getUserProfile, updateUserProfile, changeUserPassword , switchAccount} = require("../controllers/userController");
+// const {auth} = require("../middleware/authMiddleware");
+const auth = require("../middleware/authMiddleware"); // Destructure protect
+const { getUserProfile, updateUserProfile, changeUserPassword, switchAccount, switchRegister, switchVerifyOTP } = require("../controllers/userController");
 
 // @route   GET /api/user/profile
 // @desc    Get user profile
@@ -19,5 +20,9 @@ router.put("/profile", auth, updateUserProfile);
 router.put("/password", auth, changeUserPassword);
 
 router.put("/switch-account", auth, switchAccount);
+
+router.post("/switch-register", switchRegister);
+
+router.post("/switch-verify-otp", switchVerifyOTP);
 
 module.exports = router;

@@ -1,7 +1,5 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-// const Buyer = require("../models/Buyer");
-// const Seller = require("../models/Seller");
 const User = require("../models/User");
 const crypto = require("crypto");
 const Verification = require("../models/Verification");
@@ -148,43 +146,6 @@ exports.register = async (req, res) => {
   }
 };
 
-
-// Login User
-// exports.login = async (req, res) => {
-//   try {
-//     const { email, password, type } = req.body; // ✅ Make sure type is included
-
-//     console.log("🔹 Login request received:", { email, type });
-
-//     // ✅ Determine whether user is a Buyer or Seller
-//     const UserModel = type === "buyer" ? Buyer : Seller;
-
-//     // ✅ Check if the user exists
-//     let user = await UserModel.findOne({ email });
-
-//     if (!user) {
-//       console.log("❌ User not found:", email);
-//       return res.status(400).json({ message: "Invalid email or password" });
-//     }
-
-//     // ✅ Check if password is correct
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       console.log("❌ Incorrect password for:", email);
-//       return res.status(400).json({ message: "Invalid email or password" });
-//     }
-
-//     // ✅ Generate JWT Token
-//     const token = jwt.sign({ id: user.id, type }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
-//     console.log("✅ User logged in:", email);
-//     res.status(200).json({ message: "Login successful", token });
-//   } catch (error) {
-//     console.error("❌ Login Error:", error);
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
 exports.login = async (req, res) => {
   try {
     const { email, password, rememberMe } = req.body;
@@ -222,10 +183,11 @@ exports.login = async (req, res) => {
     if (hasBuyer && hasSeller) {
       userType = "buyer"; // If both accounts exist, default to buyer
     }
+
     // ✅ Generate JWT Token
     // Update token expiration based on remember me
     const token = jwt.sign(
-      { id: user.id, type: userType },
+      { id: user.id, email: user.email, type: userType }, // Include email in the payload
       process.env.JWT_SECRET,
       { expiresIn: rememberMe ? "30d" : "1d" } // 30 days if checked, 1 day if not
     );
@@ -423,7 +385,7 @@ exports.verifyOTP = async (req, res) => {
     res.status(200).json({ message: `Account verified successfully as ${type}! Please log in.` });
   } catch (error) {
     console.error("❌ OTP Verification Error:", error);
-    res.status(500).json({ error: error.message });
+    (res.status500).json({ error: error.message });
   }
 };
 
@@ -457,24 +419,21 @@ exports.resendOTP = async (req, res) => {
   }
 };
 
-  exports.loginStatus = (req, res) => {
-    try {
-      const token = req.cookies.token;
-      if (!token) {
-        return res.json(false);
-      }
-
-      const verified = jwt.verify(token, process.env.JWT_SECRET);
-      if (verified) {
-        return res.json(true);
-      }
-
-      return res.json(false);
-    } catch (error) {
-      console.error("❌ Login Status Error:", error);
+exports.loginStatus = (req, res) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) {
       return res.json(false);
     }
-  };
 
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    if (verified) {
+      return res.json(true);
+    }
 
-
+    return res.json(false);
+  } catch (error) {
+    console.error("❌ Login Status Error:", error);
+    return res.json(false);
+  }
+};

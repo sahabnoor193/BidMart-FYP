@@ -37,11 +37,12 @@ const SellerDashboard = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    console.log('[Auth Check] Checking authentication status');
     if (!token) {
+      console.warn('[Auth Redirect] No token found, redirecting to login');
       navigate('/login');
       return;
     }
-
     // Get stored user type if available
     const storedUserType = localStorage.getItem('userType');
     if (storedUserType) {
@@ -122,7 +123,7 @@ const SellerDashboard = () => {
           const profile = profileResponse.data;
   
           // Create new account with opposite type
-          const registrationResponse = await axios.post("http://localhost:5000/api/auth/register", {
+          const registrationResponse = await axios.post("http://localhost:5000/api/user/switch-register", {
             name: profile.name,
             email: profile.email,
             password: 'defaultPassword123', // You might want to handle password securely
@@ -144,8 +145,8 @@ const SellerDashboard = () => {
             localStorage.removeItem('userType');
             localStorage.removeItem('userName');
   
-            // Redirect to verification page
-            navigate('/otp-verification');
+            // Redirect to verification page with isSwitchVerification flag
+            navigate('/otp-verification', { state: { isSwitchVerification: true } });
           } else {
             alert('Failed to create account. Please try again.');
           }
@@ -447,7 +448,7 @@ const SellerDashboard = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100 mt-16">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="w-full md:w-1/4 p-5 bg-gray-100">
         <div className="bg-gray-200 p-5 rounded-lg">
@@ -461,7 +462,8 @@ const SellerDashboard = () => {
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button 
             className="bg-red-600 text-white p-2 rounded cursor-pointer"
-            onClick={() => setActiveTab("addProduct")}
+            // onClick={() => setActiveTab("addProduct")}
+            onClick={() => navigate('/add-product')}
           >
             Add product
           </button>

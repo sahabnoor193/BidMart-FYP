@@ -1,6 +1,6 @@
 const User = require("../models/User");
-const Product = require("../models/Product");
 const Bid = require("../models/Bid");
+const Product = require("../models/Products");
 
 exports.getBuyerDashboard = async (req, res) => {
     try {

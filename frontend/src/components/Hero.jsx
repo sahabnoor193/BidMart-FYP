@@ -4,7 +4,7 @@ import heroimage from "../assets/HeroSection.png";
 const Hero = () => {
   return (
     <section
-      className="bg-black bg-cover bg-center pt-20"
+      className="bg-black bg-cover bg-center "
       style={{
         backgroundImage:  `url(${heroimage})`
       }}

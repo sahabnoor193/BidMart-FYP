@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const OtpVerification = () => {
   const [otp, setOtp] = useState("");
@@ -9,6 +9,8 @@ const OtpVerification = () => {
   const [resendMessage, setResendMessage] = useState("");
   const [timer, setTimer] = useState(300); // 5 minutes countdown (300 seconds)
   const navigate = useNavigate();
+  const location = useLocation();
+  const isSwitchVerification = location.state?.isSwitchVerification || false;
 
   // ✅ Countdown Timer Effect
   useEffect(() => {
@@ -32,6 +34,48 @@ const OtpVerification = () => {
   const [type, setType] = useState(localStorage.getItem("type") || "buyer"); // Retrieve type from localStorage
   const [password, setPassword] = useState(localStorage.getItem("password") || ""); // Retrieve password from localStorage
   
+  // const handleVerifyOTP = async (e) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   setError("");
+  //   setResendMessage("");
+  
+  //   console.log("🔹 Sending verification request with: ", { email, otp, name, password, type }); // ✅ Debugging log
+  
+  //   try {
+  //     const endpoint = isSwitchVerification ? "switch-verify-otp" : "verify-otp";
+  //     const response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ email, otp, name, password, type }),
+  //     });
+  
+  //     const data = await response.json();
+  //     console.log("🔹 Response from backend: ", data); // ✅ Log backend response
+  
+  //     setLoading(false);
+  
+  //     if (response.ok) {
+  //       alert(data.message);
+  //       if (isSwitchVerification) {
+  //         localStorage.setItem("token", data.token);
+  //         localStorage.setItem("userType", data.type);
+  //         navigate(`/${data.type}-dashboard`); // ✅ Redirect to the appropriate dashboard
+  //       } else {
+  //         navigate("/signin"); // ✅ Redirect to Sign-in Page
+  //       }
+  //     } else {
+  //       setError(data.message || "Invalid OTP. Please try again.");
+  //     }
+  //   } catch (err) {
+  //     console.error("❌ Error verifying OTP:", err);
+  //     setError("An error occurred while verifying OTP.");
+  //     setLoading(false);
+  //   }
+  // };  
+  
+  // ✅ Function to Resend OTP
+ 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -41,7 +85,11 @@ const OtpVerification = () => {
     console.log("🔹 Sending verification request with: ", { email, otp, name, password, type }); // ✅ Debugging log
   
     try {
-      const response = await fetch("http://localhost:5000/api/auth/verify-otp", {
+      // Dynamically set the base URL based on the endpoint
+      const baseURL = isSwitchVerification ? "http://localhost:5000/api/user" : "http://localhost:5000/api/auth";
+      const endpoint = isSwitchVerification ? "switch-verify-otp" : "verify-otp";
+  
+      const response = await fetch(`${baseURL}/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp, name, password, type }),
@@ -54,7 +102,13 @@ const OtpVerification = () => {
   
       if (response.ok) {
         alert(data.message);
-        navigate("/signin"); // ✅ Redirect to Sign-in Page
+        if (isSwitchVerification) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("userType", data.type);
+          navigate(`/${data.type}-dashboard`); // ✅ Redirect to the appropriate dashboard
+        } else {
+          navigate("/signin"); // ✅ Redirect to Sign-in Page
+        }
       } else {
         setError(data.message || "Invalid OTP. Please try again.");
       }
@@ -63,19 +117,18 @@ const OtpVerification = () => {
       setError("An error occurred while verifying OTP.");
       setLoading(false);
     }
-  };  
+  };
   
-  // ✅ Function to Resend OTP
   const handleResendOTP = async () => {
     setLoading(true);
     setError("");
     setResendMessage("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/resend-otp", {
+      const response = await fetch("http://localhost:5000/api/user/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, type }),
       });
 
       const data = await response.json();
@@ -133,7 +186,7 @@ const OtpVerification = () => {
 
         {/* ✅ Resend OTP Button (Disabled Until Timer Ends) */}
         <p className="text-gray-500 text-center mt-4">
-          Didnt receive an OTP?{" "}
+          Didn't receive an OTP?{" "}
           <button
             onClick={handleResendOTP}
             className={`text-blue-500 hover:underline ${timer > 0 ? "cursor-not-allowed opacity-50" : ""}`}

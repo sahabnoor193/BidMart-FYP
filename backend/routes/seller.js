@@ -1,7 +1,8 @@
 // routes/seller.js
 const express = require("express");
 const router = express.Router();
-const auth = require("../middleware/authMiddleware");
+// const auth = require("../middleware/authMiddleware");
+const auth = require("../middleware/authMiddleware"); // Destructure protect
 const { getSellerDashboard } = require("../controllers/sellerController");
 
 // @route   GET /api/seller/dashboard
