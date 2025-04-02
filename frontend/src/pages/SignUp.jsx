@@ -22,7 +22,7 @@ const Signup = ({ setIsAuthenticated }) => {
       if (userType === "seller") {
         navigate("/seller-dashboard");
       } else {
-        navigate("/dashboard");
+        navigate("/buyer-dashboard");
       }
     }
   }, [navigate]);
@@ -63,6 +63,7 @@ const Signup = ({ setIsAuthenticated }) => {
       alert("An error occurred during registration");
     }
   };
+
 
   const googleLoginHandler = async (googleResponse) => {
     try {
@@ -214,7 +215,7 @@ const Signup = ({ setIsAuthenticated }) => {
                 </button>
               </a>
 
-              <GoogleOAuthProvider clientId="852097868952-cvmhh8njvar2siti0j89m11vsrf0vhpt.apps.googleusercontent.com">
+              <GoogleOAuthProvider clientId="1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com">
                 <GoogleLogin onSuccess={(response) => googleLoginHandler(response)}
                              onError={(error) => console.log(error)} />
               </GoogleOAuthProvider>

@@ -5,9 +5,15 @@ const Dashboard = () => {
   const email = localStorage.getItem("userEmail");
 
   const handleLogout = () => {
+    console.log("Logout button clicked"); // Debugging
     localStorage.removeItem("token");
     localStorage.removeItem("userEmail");
-    navigate("/signin");
+  
+    console.log("Navigating to home...");
+    navigate("/");  // Redirect to home page
+    console.log("This log appears if navigation failed");
+
+    window.location.href = "/"; 
   };
 
   return (
@@ -17,8 +23,7 @@ const Dashboard = () => {
 
       <button
         onClick={handleLogout}
-        className="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
-      >
+        className="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300">
         Logout
       </button>
     </div>
@@ -26,3 +31,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

@@ -24,6 +24,7 @@ const BidSchema = new mongoose.Schema({
   message: { 
     type: String 
   },
+  paymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment' },
   createdAt: { 
     type: Date, 
     default: Date.now 

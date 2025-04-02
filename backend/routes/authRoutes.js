@@ -6,8 +6,6 @@ const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
-router.post("/logout", logout);
-router.get("/login-status", loginStatus);
 
 // Google OAuth
 router.get("/session-data", (req, res) => {

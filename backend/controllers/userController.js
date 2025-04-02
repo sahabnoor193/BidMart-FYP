@@ -1,5 +1,7 @@
 const User = require("../models/User");
+const Verification = require("../models/Verification");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken"); // Add this line
 
 exports.getUserProfile = async (req, res) => {
   try {
@@ -46,5 +48,54 @@ exports.changeUserPassword = async (req, res) => {
   } catch (error) {
     console.error("Error changing password:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.switchAccount = async (req, res) => {
+  try {
+    // Get full user document from database
+    const currentUser = await User.findById(req.user.id);
+    if (!currentUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const email = currentUser.email;
+    const currentType = currentUser.type;
+    const newType = currentType === 'buyer' ? 'seller' : 'buyer';
+
+    // Check for existing opposite account
+    const oppositeAccount = await User.findOne({ 
+      email: email,
+      type: newType
+    });
+
+    if (oppositeAccount) {
+      // Generate token for existing account
+      const token = jwt.sign(
+        { id: oppositeAccount._id, type: newType },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN }
+      );
+
+      return res.json({
+        exists: true,
+        message: `Switched to existing ${newType} account`,
+        token,
+        userType: newType
+      });
+    }
+
+    // If no existing account, return proper response
+    return res.json({
+      exists: false,
+      message: `${newType} account not found for this email`
+    });
+
+  } catch (error) {
+    console.error("Switch Account Error:", error);
+    res.status(500).json({ 
+      error: "Server Error",
+      details: error.message
+    });
   }
 };
