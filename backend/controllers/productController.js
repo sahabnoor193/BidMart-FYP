@@ -125,7 +125,7 @@ const createProduct = asyncHandler(async (req, res) => {
       endDate: endDateObj,
       images: images || [],
       isDraft: isDraft === true,
-      status: 'pending'
+      status: 'active'
     });
 
     console.log('Created product:', product);

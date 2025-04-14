@@ -41,7 +41,7 @@ const productSchema = new mongoose.Schema({
   images: [{ type: String }],
   mainImageIndex: { type: Number, default: 0 },
   isDraft: { type: Boolean, default: false },
-  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  status: { type: String, enum: ['active', 'ended'], default: 'active' },
   createdAt: { type: Date, default: Date.now },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 });
