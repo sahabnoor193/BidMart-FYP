@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaList, FaCheckCircle, FaStar, FaExchangeAlt } from 'react-icons/fa';
-
+import { jwtDecode } from 'jwt-decode';
 const BuyerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [userType, setUserType] = useState('buyer');
@@ -33,6 +33,15 @@ const BuyerDashboard = () => {
   
   const navigate = useNavigate();
 
+  const handleLogout = useCallback(() => {
+    console.log('[Logout] Clearing local storage and redirecting');
+    localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userName');
+    navigate('/signin');
+  }, [navigate]);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     console.log('[Auth Check] Checking authentication status');
@@ -41,6 +50,20 @@ const BuyerDashboard = () => {
       navigate('/login');
       return;
     }
+        // Check token expiration client-side
+        try {
+          const decoded = jwtDecode(token);
+          const currentTime = Date.now() / 1000;
+          if (decoded.exp < currentTime) {
+            console.warn('[Auth Check] Token expired');
+            handleLogout();
+            return;
+          }
+        } catch (error) {
+          console.error('[Auth Check] Invalid token:', error);
+          handleLogout();
+          return;
+        }
 
     const fetchUserData = async () => {
       console.log('[API Call] Starting data fetching process');
@@ -73,21 +96,16 @@ const BuyerDashboard = () => {
       } catch (err) {
         console.error('[Fetch Error] Error fetching data:', err.response?.data || err.message);
         setError('Failed to load data. Please try again later.');
+        // Add this check for 401 status
+        if (err.response && err.response.status === 401) {
+          localStorage.removeItem('token');
+          handleLogout(); // Trigger logout on token issues
+        }
       }
     };
     
     fetchUserData();
-  }, [navigate]);
-
-  const handleLogout = () => {
-    console.log('[Logout] Initiating logout, clearing local storage');
-    localStorage.removeItem('token');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userType');
-    localStorage.removeItem('userName');
-    console.log(`[Logout] User ${email} logged out`);
-    navigate('/login');
-  };
+  }, [navigate, handleLogout]);
 
   const handleSwitchUserType = async () => {
     try {
@@ -174,6 +192,9 @@ const BuyerDashboard = () => {
     } catch (err) {
       console.error('[Profile Error] Update failed:', err.response?.data || err.message);
       alert('Failed to update profile. Please try again.');
+      if (err.response && err.response.status === 401) {
+        handleLogout(); // Trigger logout on token issues
+      }
     }
   };
 
@@ -219,6 +240,9 @@ const BuyerDashboard = () => {
       console.error('[Password Error] Change failed:', err.response?.data || err.message);
       console.error('Error changing password:', err);
       alert('Failed to change password. Please try again.');
+      if (err.response && err.response.status === 401) {
+        handleLogout(); // Trigger logout on token issues
+      }
     }
   };
 

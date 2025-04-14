@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 // Import the icons you need
 import { FaList, FaHistory, FaStar, FaExchangeAlt } from 'react-icons/fa';
 
@@ -50,17 +51,20 @@ const SellerDashboard = () => {
     }
 
     const fetchUserData = async () => {
+      console.log('[API Call] Starting data fetching process');
       try {
-        // Fetch dashboard data
+        console.log('[Dashboard Data] Fetching seller dashboard data from /api/seller/dashboard');
         const dashboardResponse = await axios.get("http://localhost:5000/api/seller/dashboard", {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log('Seller dashboard data fetched:', dashboardResponse.data);
         setSellerData(dashboardResponse.data);
   
-        // Fetch user profile separately
+        console.log('[Profile Data] Fetching user profile from /api/user/profile');
         const profileResponse = await axios.get("http://localhost:5000/api/user/profile", {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log('User profile data fetched:', profileResponse.data);
         
         const profile = profileResponse.data;
         setUserProfile({
@@ -72,18 +76,35 @@ const SellerDashboard = () => {
           city: profile.city || ''
         });
   
+        console.log('[User Profile] Updated local state with profile data');
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching data:', err);
+        console.error('[Fetch Error] Error fetching data:', err.response?.data || err.message);
         setError('Failed to load data. Please try again later.');
-        setLoading(false);
+        if (err.response && err.response.status === 401) {
+          localStorage.removeItem('token');
+          handleLogout(); // Trigger logout on token issues
+        }
       }
     };
   
     fetchUserData();
   }, [navigate]);
 
+  // Listen for storage events to update when data changes in other tabs
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'sellerData') {
+        setSellerData(JSON.parse(e.newValue));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const handleLogout = () => {
+    console.log('[Logout] Clearing local storage and redirecting');
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userType');
@@ -91,15 +112,15 @@ const SellerDashboard = () => {
     navigate('/login');
   };
 
-  // Add handler for switching user type
   const handleSwitchUserType = async () => {
+    console.log('[Switch Account] Initiating account switch');
     try {
       const token = localStorage.getItem('token');
       const userEmail = localStorage.getItem('userEmail');
       const currentType = localStorage.getItem('userType');
       const newType = currentType === 'buyer' ? 'seller' : 'buyer';
   
-      // Check if opposite account exists
+      console.log('[Switch Account] Checking if opposite account exists');
       const response = await axios.put(
         "http://localhost:5000/api/user/switch-account",
         {},
@@ -107,86 +128,89 @@ const SellerDashboard = () => {
       );
   
       if (response.data.exists) {
-        // Switch to existing account
+        console.log('[Switch Account] Switching to existing account');
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userType', response.data.userType);
         window.location.href = `/${response.data.userType}-dashboard`;
       } else {
-        // Ask user if they want to create a new account
+        console.log('[Switch Account] No existing account found, prompting for new account creation');
         const createNewAccount = window.confirm(`No ${newType} account found. Do you want to create a new ${newType} account?`);
         if (createNewAccount) {
-          // Fetch current user profile
+          console.log('[Switch Account] Creating new account');
           const profileResponse = await axios.get("http://localhost:5000/api/user/profile", {
             headers: { Authorization: `Bearer ${token}` }
           });
   
           const profile = profileResponse.data;
   
-          // Create new account with opposite type
           const registrationResponse = await axios.post("http://localhost:5000/api/user/switch-register", {
             name: profile.name,
             email: profile.email,
-            password: 'defaultPassword123', // You might want to handle password securely
+            password: 'defaultPassword123',
             type: newType
           });
   
           if (registrationResponse.data.message) {
+            console.log('[Switch Account] New account created successfully');
             alert('Account created successfully. Please check your email for verification.');
   
-            // Store account information in local storage
             localStorage.setItem('email', profile.email);
             localStorage.setItem('name', profile.name);
             localStorage.setItem('password', 'defaultPassword123');
             localStorage.setItem('type', newType);
   
-            // Log out the current user
-            localStorage.removeItem('token');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userType');
-            localStorage.removeItem('userName');
+            handleLogout();
   
-            // Redirect to verification page with isSwitchVerification flag
             navigate('/otp-verification', { state: { isSwitchVerification: true } });
           } else {
+            console.error('[Switch Account] Failed to create new account');
             alert('Failed to create account. Please try again.');
           }
         }
       }
     } catch (err) {
-      console.error('Switch error:', err);
+      console.error('[Switch Error] Account switch failed:', err.response?.data || err.message);
       alert(err.response?.data?.message || 'Account switch failed');
     }
   };
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    console.log('[Profile Update] Initiating profile update');
     try {
       const token = localStorage.getItem('token');
       const profileData = {
         name: `${userProfile.firstName} ${userProfile.lastName}`.trim(),
-        // Remove email from payload
         address: userProfile.address,
         phone: userProfile.phone,
         city: userProfile.city
       };
-      
+      console.log('[Profile Update] Sending data:', profileData);
       await axios.put("http://localhost:5000/api/user/profile", profileData, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('[Profile Update] Profile updated successfully');
       alert('Profile updated successfully');
     } catch (err) {
-      console.error('Error updating profile:', err);
+      console.error('[Profile Error] Update failed:', err.response?.data || err.message);
       alert('Failed to update profile. Please try again.');
+      if (err.response && err.response.status === 401) {
+        handleLogout(); // Trigger logout on token issues
+      }
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    console.log('[Password Change] Initiating password change');
+
     if (passwordData.newPassword !== passwordData.confirmNewPassword) {
+      console.warn('[Password Mismatch] New passwords do not match');
       alert('New password and confirm new password do not match');
       return;
     }
     if (passwordData.newPassword === passwordData.currentPassword) {
+      console.warn('[Password Mismatch] New password matches current password');
       alert('New password should not match the current password');
       return;
     }
@@ -196,14 +220,17 @@ const SellerDashboard = () => {
         oldPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       };
+      console.log('[Password Change] Sending password change request');
       
       const response = await axios.put("http://localhost:5000/api/user/password", passwordDataToSend, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.data.error) {
+        console.warn('[Password Error]', response.data.error);
         alert(response.data.error);
       } else {
+        console.log('[Password Change] Successfully updated password');
         alert('Password updated successfully');
         setPasswordData({
           currentPassword: '',
@@ -212,8 +239,11 @@ const SellerDashboard = () => {
         });
       }
     } catch (err) {
-      console.error('Error changing password:', err);
+      console.error('[Password Error] Change failed:', err.response?.data || err.message);
       alert('Failed to change password. Please try again.');
+      if (err.response && err.response.status === 401) {
+        handleLogout(); // Trigger logout on token issues
+      }
     }
   };
 
@@ -469,7 +499,7 @@ const SellerDashboard = () => {
           </button>
           <button 
             className="bg-red-600 text-white p-2 rounded cursor-pointer"
-            onClick={() => setActiveTab("showProducts")}
+            onClick={() => navigate('/dashboard/products')}
           >
             Show Products
           </button>

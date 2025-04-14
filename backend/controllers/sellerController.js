@@ -1,6 +1,7 @@
 const User = require("../models/User");
+const Product = require("../models/productModel");
 const Bid = require("../models/Bid");
-const Product = require("../models/Products");
+const asyncHandler = require("express-async-handler");
 
 exports.getSellerDashboard = async (req, res) => {
   try {
@@ -49,3 +50,19 @@ exports.getSellerDashboard = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// @desc    Get all products for logged-in seller
+// @route   GET /api/seller/products
+// @access  Private
+exports.getSellerProducts = asyncHandler(async (req, res) => {
+  try {
+    const products = await Product.find({ user: req.user._id })
+      .sort('-createdAt')
+      .select('name startingPrice currentPrice status startDate endDate isDraft');
+
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching seller products:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
