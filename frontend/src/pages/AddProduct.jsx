@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CalendarIcon, PlusIcon, XIcon } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-const AddProduct = ({ editProduct }) => {
+const AddProduct = () => {
   const navigate = useNavigate();
   const [productImages, setProductImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -26,29 +26,6 @@ const AddProduct = ({ editProduct }) => {
     endDate: '',
     isDraft: false
   });
-
-  // Load product data if in edit mode
-  useEffect(() => {
-    if (editProduct) {
-      setFormData({
-        name: editProduct.name,
-        description: editProduct.description,
-        brand: editProduct.brand,
-        quantity: editProduct.quantity.toString(),
-        country: editProduct.country,
-        city: editProduct.city,
-        startingPrice: editProduct.startingPrice.toString(),
-        bidQuantity: editProduct.bidQuantity.toString(),
-        bidIncrease: editProduct.bidIncrease.toString(),
-        category: editProduct.category,
-        startDate: editProduct.startDate.split('T')[0],
-        endDate: editProduct.endDate.split('T')[0],
-        isDraft: editProduct.isDraft
-      });
-      setProductImages(editProduct.images);
-      setIsDraft(editProduct.isDraft);
-    }
-  }, [editProduct]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -92,21 +69,26 @@ const AddProduct = ({ editProduct }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, draftStatus) => {
     e.preventDefault();
+    console.log('Form submission started');
     setIsSubmitting(true);
+    setIsDraft(draftStatus);
 
     try {
+      console.log('Checking required fields');
       // Validate required fields
       const requiredFields = ['name', 'description', 'brand', 'quantity', 'country', 'city', 'startingPrice', 'bidQuantity', 'bidIncrease', 'category', 'startDate', 'endDate'];
       const missingFields = requiredFields.filter(field => !formData[field]);
       
       if (missingFields.length > 0) {
+        console.log('Missing fields:', missingFields);
         toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
         setIsSubmitting(false);
         return;
       }
 
+      console.log('Formatting product data');
       // Format the data
       const productData = {
         name: formData.name.trim(),
@@ -122,70 +104,144 @@ const AddProduct = ({ editProduct }) => {
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
         images: productImages,
-        isDraft
+        isDraft: draftStatus
       };
+
+      console.log('Submitting product with draft status:', draftStatus);
+      console.log('Product data:', productData);
 
       // Validate numeric fields
       if (isNaN(productData.quantity) || productData.quantity <= 0) {
+        console.log('Invalid quantity');
         toast.error('Please enter a valid quantity');
+        setIsSubmitting(false);
         return;
       }
       if (isNaN(productData.startingPrice) || productData.startingPrice <= 0) {
+        console.log('Invalid starting price');
         toast.error('Please enter a valid starting price');
+        setIsSubmitting(false);
         return;
       }
       if (isNaN(productData.bidQuantity) || productData.bidQuantity <= 0) {
+        console.log('Invalid bid quantity');
         toast.error('Please enter a valid bid quantity');
+        setIsSubmitting(false);
         return;
       }
       if (isNaN(productData.bidIncrease) || productData.bidIncrease <= 0) {
+        console.log('Invalid bid increase');
         toast.error('Please enter a valid bid increase percentage');
+        setIsSubmitting(false);
         return;
       }
 
-      // Validate dates
-      const startDate = new Date(formData.startDate);
-      const endDate = new Date(formData.endDate);
-      const now = new Date();
+      // Only validate dates if not a draft
+      if (!draftStatus) {
+        const startDate = new Date(formData.startDate);
+        const endDate = new Date(formData.endDate);
+        const now = new Date();
 
-      if (startDate < now) {
-        toast.error('Start date must be in the future');
+        // Use UTC for comparison
+        const utcStart = Date.UTC(
+          startDate.getFullYear(),
+          startDate.getMonth(),
+          startDate.getDate()
+        );
+        const utcNow = Date.UTC(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        );
+
+        if (utcStart < utcNow) {
+          console.log('Invalid start date');
+          toast.error('Start date cannot be in the past');
+          setIsSubmitting(false);
+          return;
+        }
+        if (endDate <= startDate) {
+          console.log('Invalid end date');
+          toast.error('End date must be after start date');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Check if user is authenticated
+      const token = localStorage.getItem('token');
+      console.log('Auth token:', token ? 'Present' : 'Missing');
+      if (!token) {
+        toast.error('Please login to continue');
+        setIsSubmitting(false);
+        navigate('/login');
         return;
       }
-      if (endDate <= startDate) {
-        toast.error('End date must be after start date');
-        return;
+
+      console.log('Creating new product');
+      const response = await axios.post('http://localhost:5000/api/products', productData, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('Create response:', response.data);
+      toast.success(draftStatus ? 'Product saved as draft' : 'Product created successfully');
+
+      // Update active bids count in seller dashboard if not a draft
+      if (!draftStatus) {
+        try {
+          const dashboardResponse = await axios.get('http://localhost:5000/api/seller/dashboard', {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          // Update the seller data in localStorage to reflect the new active bids count
+          localStorage.setItem('sellerData', JSON.stringify(dashboardResponse.data));
+        } catch (error) {
+          console.error('Error updating dashboard data:', error);
+        }
       }
 
-      if (editProduct) {
-        await axios.put(`http://localhost:5000/api/products/${editProduct._id}`, productData, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        toast.success('Product updated successfully');
-      } else {
-        const response = await axios.post('http://localhost:5000/api/products', productData, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        console.log('Server response:', response.data);
-        toast.success('Product created successfully');
-      }
-
-      navigate('/dashboard/products');
+      // Clear form and navigate
+      console.log('Clearing form and preparing to navigate');
+      setFormData({
+        name: '',
+        description: '',
+        brand: '',
+        quantity: '',
+        country: '',
+        city: '',
+        startingPrice: '',
+        bidQuantity: '',
+        bidIncrease: '',
+        category: '',
+        startDate: '',
+        endDate: '',
+        isDraft: false
+      });
+      setProductImages([]);
+      
+      // Navigate after a short delay to show the success message
+      console.log('Navigating to products page');
+      setTimeout(() => {
+        navigate('/dashboard/products');
+      }, 1000);
     } catch (error) {
-      console.error('Error details:', error.response?.data || error);
-      toast.error(error.response?.data?.message || 'Something went wrong');
+      console.error('Error in form submission:', error);
+      console.error('Error response:', error.response);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          'Something went wrong. Please try again.';
+      toast.error(errorMessage);
     } finally {
+      console.log('Form submission completed');
       setIsSubmitting(false);
     }
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => handleSubmit(e, isDraft)}>
         {/* Breadcrumb Section */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-6">
           <div className="flex items-center mb-4 md:mb-0">
@@ -196,26 +252,26 @@ const AddProduct = ({ editProduct }) => {
                 <li>/</li>
                 <li><a href="/dashboard" className="hover:text-red-600 transition-colors">Dashboard</a></li>
                 <li>/</li>
-                <li className="font-medium text-gray-700">
-                  {editProduct ? 'Edit Product' : 'Add Product'}
-                </li>
+                <li className="font-medium text-gray-700">Add Product</li>
               </ol>
             </nav>
           </div>
           <div className="flex space-x-3">
             <button 
               type="button"
-              onClick={() => setIsDraft(!isDraft)}
-              className={`px-4 py-2 rounded transition-all ${isDraft ? 'bg-gray-600 text-white' : 'bg-gray-200'}`}
+              onClick={(e) => handleSubmit(e, true)}
+              disabled={isSubmitting}
+              className={`px-4 py-2 rounded transition-all ${isDraft ? 'bg-gray-600 text-white' : 'bg-gray-200'} disabled:opacity-50`}
             >
-              Save as Draft
+              {isSubmitting && isDraft ? 'Saving...' : 'Save as Draft'}
             </button>
             <button 
-              type="submit"
+              type="button"
+              onClick={(e) => handleSubmit(e, false)}
               disabled={isSubmitting}
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-all disabled:opacity-50"
             >
-              {isSubmitting ? 'Saving...' : editProduct ? 'Update Product' : 'Add Product'}
+              {isSubmitting && !isDraft ? 'Saving...' : 'Add Product'}
             </button>
           </div>
         </div>
@@ -472,25 +528,6 @@ const AddProduct = ({ editProduct }) => {
                 </div>
               </div>
             </div>
-
-            {/* Status Display (for editing) */}
-            {editProduct && (
-              <div className="bg-white border rounded-lg p-6 shadow-sm">
-                <h2 className="text-2xl font-bold text-red-600 mb-4">Status</h2>
-                <div className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                  editProduct.status === 'approved' ? 'bg-green-100 text-green-800' :
-                  editProduct.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {editProduct.status.charAt(0).toUpperCase() + editProduct.status.slice(1)}
-                </div>
-                {editProduct.status === 'rejected' && editProduct.rejectionReason && (
-                  <div className="mt-2 text-sm text-gray-600">
-                    <p><span className="font-medium">Reason:</span> {editProduct.rejectionReason}</p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </form>

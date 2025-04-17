@@ -15,32 +15,32 @@ exports.getSellerDashboard = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get products by this seller
-    const products = await Product.find({ sellerId: req.user.id });
-    const productIds = products.map(product => product._id);
+    // Get all products by this seller
+    const products = await Product.find({ user: req.user.id })
+      .sort({ createdAt: -1 })
+      .select('name startingPrice currentPrice status startDate endDate createdAt images category');
 
-    // Get bid history for the seller's products
-    let bidHistory = [];
-    if (productIds.length > 0) {
-      const bids = await Bid.find({ productId: { $in: productIds } })
-        .sort({ createdAt: -1 })
-        .limit(10)
-        .populate('productId', 'name startingPrice currentPrice')
-        .populate('bidderId', 'name');
+    // Format products for bid history
+    const bidHistory = products.map(product => ({
+      item: product.name,
+      startPrice: product.startingPrice,
+      currentPrice: product.currentPrice || product.startingPrice,
+      bidTime: product.createdAt,
+      status: product.status,
+      startDate: product.startDate,
+      endDate: product.endDate,
+      sold: product.status === 'sold',
+      category: product.category,
+      image: product.images[0] // Get the first image if available
+    }));
 
-      bidHistory = bids.map(bid => ({
-        item: bid.productId.name,
-        startPrice: bid.productId.startingPrice,
-        currentPrice: bid.amount,
-        bidTime: bid.createdAt,
-        bidderName: bid.bidderId.name,
-        sold: bid.status === 'accepted'
-      }));
-    }
+    // Count active and ended bids
+    const activeBids = products.filter(p => p.status === 'active').length;
+    const endedBids = products.filter(p => p.status === 'ended').length;
 
     res.json({
-      activeBids: user.activeBids,
-      endedBids: user.endedBids,
+      activeBids,
+      endedBids,
       favourites: user.favourites,
       bidHistory,
       notifications: [] // Placeholder for notifications

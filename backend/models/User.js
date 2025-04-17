@@ -15,6 +15,10 @@ const UserSchema = new mongoose.Schema({
   city: { type: String, default: undefined,},
   address: {type: String, default: undefined,},
   createdAt: { type: Date, default: Date.now },
+  totalFavorites: {
+    type: Number,
+    default: 0
+  },
 });
 
 // ✅ Ensure email & type combination is unique

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 // Import the icons you need
-import { FaList, FaHistory, FaStar, FaExchangeAlt } from 'react-icons/fa';
+import { FaList, FaHistory, FaStar, FaExchangeAlt, FaTimes, FaPlus, FaEdit, FaTrash, FaSave, FaHeart } from 'react-icons/fa';
 
 const SellerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -33,6 +33,16 @@ const SellerDashboard = () => {
     newPassword: '',
     confirmNewPassword: ''
   });
+
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    activeBids: 0,
+    totalFavorites: 0,
+    totalSales: 0
+  });
+
+  const [alerts, setAlerts] = useState([]);
+  const [unreadAlerts, setUnreadAlerts] = useState(0);
 
   const navigate = useNavigate();
 
@@ -90,6 +100,66 @@ const SellerDashboard = () => {
   
     fetchUserData();
   }, [navigate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const [dashboardResponse, alertsResponse] = await Promise.all([
+          axios.get('http://localhost:5000/api/seller/dashboard', {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }),
+          axios.get('http://localhost:5000/api/seller/alerts', {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+        ]);
+
+        setSellerData(dashboardResponse.data);
+        setAlerts(alertsResponse.data);
+        setUnreadAlerts(alertsResponse.data.filter(alert => !alert.read).length);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        if (error.response?.status === 401) {
+          // Token expired or invalid
+          localStorage.removeItem('token');
+          navigate('/login');
+        } else {
+          setError('Failed to load dashboard data');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/seller/dashboard', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setStats(response.data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   // Listen for storage events to update when data changes in other tabs
   useEffect(() => {
@@ -243,6 +313,95 @@ const SellerDashboard = () => {
       alert('Failed to change password. Please try again.');
       if (err.response && err.response.status === 401) {
         handleLogout(); // Trigger logout on token issues
+      }
+    }
+  };
+
+  const handleMarkAlertAsRead = async (alertId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`http://localhost:5000/api/seller/alerts/${alertId}/read`, {}, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      setAlerts(alerts.map(alert => 
+        alert._id === alertId ? { ...alert, read: true } : alert
+      ));
+      setUnreadAlerts(prev => prev - 1);
+    } catch (error) {
+      console.error('Error marking alert as read:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      }
+    }
+  };
+
+  const getAlertIcon = (action) => {
+    switch (action) {
+      case 'added':
+        return <FaPlus className="text-green-500" />;
+      case 'edited':
+        return <FaEdit className="text-blue-500" />;
+      case 'deleted':
+        return <FaTrash className="text-red-500" />;
+      case 'draft':
+        return <FaSave className="text-yellow-500" />;
+      case 'favorited':
+        return <FaHeart className="text-pink-500" />;
+      default:
+        return <FaStar className="text-gray-500" />;
+    }
+  };
+
+  const getAlertMessage = (action, productName) => {
+    switch (action) {
+      case 'added':
+        return `New product "${productName}" has been added`;
+      case 'edited':
+        return `Product "${productName}" has been edited`;
+      case 'deleted':
+        return `Product "${productName}" has been deleted`;
+      case 'draft':
+        return `Product "${productName}" has been saved as draft`;
+      case 'favorited':
+        return `Product "${productName}" has been added to favorites`;
+      default:
+        return '';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleRemoveAlert = async (alertId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/seller/alerts/${alertId}`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      setAlerts(alerts.filter(alert => alert._id !== alertId));
+      setUnreadAlerts(prev => prev - 1);
+    } catch (error) {
+      console.error('Error removing alert:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
       }
     }
   };
@@ -454,25 +613,66 @@ const SellerDashboard = () => {
 
   const renderAlertsContent = () => {
     return (
-      <div className="rounded-lg p-6 shadow-md bg-white">
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Alerts</h2>
+          {unreadAlerts > 0 && (
+            <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full">
+              {unreadAlerts} unread
+            </span>
+          )}
+        </div>
+        {alerts.length === 0 ? (
+          <div className="text-center py-8">
+            <FaStar className="text-gray-400 text-4xl mx-auto mb-4" />
+            <p className="text-gray-500">No alerts yet</p>
+          </div>
+        ) : (
         <div className="space-y-4">
-          {Array(6).fill(0).map((_, index) => (
-            <div key={index} className="border-b pb-4">
-              <div className="flex items-start">
-                <div className="w-10 h-10 bg-gray-200 rounded-full mr-4"></div>
-                <div className="flex-1">
-                  <div className="flex justify-between">
-                    <p className="font-medium">
-                      {index % 2 === 0 ? 'Bid Accepted' : 'Bid Rejected'}
-                    </p>
-                    <span className="text-sm text-gray-500">12:34 PM</span>
+            {alerts.map((alert) => (
+              <div
+                key={alert._id}
+                className={`p-4 rounded-lg border transition-all duration-200 ${
+                  !alert.read ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3">
+                    <div className={`p-2 rounded-full ${
+                      !alert.read ? 'bg-red-100' : 'bg-gray-100'
+                    }`}>
+                      {getAlertIcon(alert.action)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">
+                        {getAlertMessage(alert.action, alert.productName)}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {formatDate(alert.createdAt)}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-gray-600">Context of the notification.</p>
+                  <div className="flex items-center space-x-2">
+                    {!alert.read && (
+                      <button
+                        onClick={() => handleMarkAlertAsRead(alert._id)}
+                        className="text-sm text-red-600 hover:text-red-800 transition-colors"
+                      >
+                        Mark as read
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleRemoveAlert(alert._id)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          )}
       </div>
     );
   };
@@ -524,7 +724,6 @@ const SellerDashboard = () => {
             Home / DashBoard
           </div>
         </div>
-        
         {activeTab === "dashboard" && renderDashboardContent()}
         {activeTab === "profile" && renderAccountContent()}
         {activeTab === "alerts" && renderAlertsContent()}

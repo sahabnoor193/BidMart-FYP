@@ -3,6 +3,7 @@ const Product = require("../models/productModel");
 const slugify = require("slugify");
 const cloudinary = require("cloudinary").v2;
 const User = require("../models/User");
+const Alert = require('../models/alertModel');
 
 // @desc    Create a new product (or draft)
 // @route   POST /api/products
@@ -66,36 +67,39 @@ const createProduct = asyncHandler(async (req, res) => {
       throw new Error("Bid increase must be a positive number");
     }
 
-      // Validate dates
-      const startDateObj = new Date(startDate);
-      const endDateObj = new Date(endDate);
-      const now = new Date();
+    // Validate dates
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    const now = new Date();
 
-      // Set all dates to UTC midnight for comparison
-      const utcStart = Date.UTC(
-        startDateObj.getFullYear(),
-        startDateObj.getMonth(),
-        startDateObj.getDate()
-      );
-      const utcNow = Date.UTC(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate()
-      );
+    // Set all dates to UTC midnight for comparison
+    const utcStart = Date.UTC(
+      startDateObj.getFullYear(),
+      startDateObj.getMonth(),
+      startDateObj.getDate()
+    );
+    const utcNow = Date.UTC(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
 
-      if (isNaN(startDateObj.getTime())) {
-        throw new Error("Invalid start date");
-      }
-      if (isNaN(endDateObj.getTime())) {
-        throw new Error("Invalid end date");
-      }
-      // Modified validation to allow today's date
+    if (isNaN(startDateObj.getTime())) {
+      throw new Error("Invalid start date");
+    }
+    if (isNaN(endDateObj.getTime())) {
+      throw new Error("Invalid end date");
+    }
+
+    // Only validate dates if not a draft
+    if (!isDraft) {
       if (utcStart < utcNow) {
         throw new Error("Start date cannot be in the past");
       }
       if (endDateObj <= startDateObj) {
         throw new Error("End date must be after start date");
       }
+    }
 
     // Create slug
     const originalSlug = slugify(name, { lower: true, strict: true });
@@ -125,12 +129,21 @@ const createProduct = asyncHandler(async (req, res) => {
       endDate: endDateObj,
       images: images || [],
       isDraft: isDraft === true,
-      status: 'active'
+      status: isDraft ? 'draft' : 'active'
+    });
+
+    // Create alert for product creation
+    await Alert.create({
+      seller: req.user._id,
+      product: product._id,
+      productName: product.name,
+      action: isDraft ? 'draft' : 'added'
     });
 
     console.log('Created product:', product);
-    // Update seller's activeBids if not a draft AND start date is today
-    if (!product.isDraft) {
+    
+    // Only update activeBids if not a draft
+    if (!isDraft) {
       const today = new Date();
       const productStartDate = new Date(product.startDate);
       
@@ -145,69 +158,12 @@ const createProduct = asyncHandler(async (req, res) => {
         console.log(`Updated activeBids for user ${userId}`);
       }
     }
+    
     res.status(201).json(product);
   } catch (error) {
     console.error('Error creating product:', error);
-    throw error;
+    res.status(500).json({ message: error.message });
   }
-});
-
-
-// @desc    Update product
-// @route   PUT /api/products/:id
-// @access  Private
-const updateProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-
-  if (!product) {
-    res.status(404);
-    throw new Error("Product not found");
-  }
-
-  // Check if user is product owner
-  if (product.user.toString() !== req.user._id.toString()) {
-    res.status(401);
-    throw new Error("Not authorized");
-  }
-
-  // Update product
-  const updatedProduct = await Product.findByIdAndUpdate(
-    req.params.id,
-    {
-      ...req.body,
-      quantity: req.body.quantity ? parseInt(req.body.quantity) : product.quantity,
-      startingPrice: req.body.startingPrice ? parseFloat(req.body.startingPrice) : product.startingPrice,
-      bidQuantity: req.body.bidQuantity ? parseInt(req.body.bidQuantity) : product.bidQuantity,
-      bidIncrease: req.body.bidIncrease ? parseFloat(req.body.bidIncrease) : product.bidIncrease,
-      startDate: req.body.startDate ? new Date(req.body.startDate) : product.startDate,
-      endDate: req.body.endDate ? new Date(req.body.endDate) : product.endDate,
-      status: 'pending' // Reset status when updating
-    },
-    { new: true }
-  );
-
-  res.status(200).json(updatedProduct);
-});
-
-// @desc    Delete product
-// @route   DELETE /api/products/:id
-// @access  Private
-const deleteProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-
-  if (!product) {
-    res.status(404);
-    throw new Error("Product not found");
-  }
-
-  // Check if user is product owner or admin
-  if (product.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
-    res.status(401);
-    throw new Error("Not authorized");
-  }
-
-  await product.remove();
-  res.status(200).json({ message: "Product removed" });
 });
 
 // @desc    Get user's products
@@ -220,9 +176,358 @@ const getUserProducts = asyncHandler(async (req, res) => {
   res.status(200).json(products);
 });
 
+
+const getActiveProducts = asyncHandler(async (req, res) => {
+  try {
+    const now = new Date();
+    console.log('[API] Fetching active products at:', now.toISOString());
+    
+    const products = await Product.find({ 
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+      isDraft: false
+    })
+    .sort('-createdAt')
+    .select('name startingPrice currentPrice status startDate endDate isDraft category city country images');
+
+    console.log('[API] Found products:', products.length);
+    res.json(products);
+  } catch (error) {
+    console.error('[API] Error fetching active products:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @desc    Get single product details
+// @route   GET /api/products/:id
+// @access  Public
+const getProductById = asyncHandler(async (req, res) => {
+  try {
+    console.log('[API] Fetching product with ID:', req.params.id);
+
+    const product = await Product.findById(req.params.id)
+      .populate("user", "name email phone createdAt city")
+      .lean();
+
+    if (!product) {
+      console.error('[API] Product not found for ID:', req.params.id);
+      res.status(404);
+      throw new Error("Product not found");
+    }
+
+    console.log('[API] Found product:', product);
+
+    // Calculate years active
+    const seller = await User.findById(product.user._id);
+    const yearsActive = new Date().getFullYear() - new Date(seller.createdAt).getFullYear();
+
+    console.log('[API] Seller details:', seller);
+
+    // Format dates to MM/DD/YY
+    const formatDate = (date) => 
+      new Date(date).toLocaleDateString("en-US", {
+        year: "2-digit",
+        month: "2-digit",
+        day: "2-digit"
+      });
+
+    // Get seller's previous products (excluding current product)
+    const previousProducts = await Product.find({
+      user: product.user._id,
+      _id: { $ne: product._id },
+      isDraft: false
+    })
+    .sort('-createdAt')
+    .limit(5)
+    .select('name startingPrice currentPrice status startDate endDate images');
+
+    // Build response
+    const response = {
+      title: product.name,
+      country: product.country,
+      startBid: product.startingPrice,
+      latestBid: product.currentPrice,
+      totalBids: product.totalBids,
+      images: {
+        main: product.images[product.mainImageIndex] || product.images[0],
+        thumbnails: product.images
+      },
+      details: {
+        quantity: product.quantity,
+        brand: product.brand,
+        dateStart: formatDate(product.startDate),
+        dateEnd: formatDate(product.endDate),
+        description: product.description
+      },
+      profile: {
+        name: product.user.name,
+        years: yearsActive,
+        time: formatDate(product.user.createdAt),
+        bids: await Product.countDocuments({ user: product.user._id, isDraft: false }) // Total active products listed
+      },
+      contact: {
+        name: product.user.name,
+        email: product.user.email,
+        phone: product.user.phone,
+        city: product.user.city
+      },
+      previousBids: previousProducts.map(prod => ({
+        item: prod.name,
+        price: prod.currentPrice || prod.startingPrice,
+        status: prod.status,
+        startDate: formatDate(prod.startDate),
+        endDate: formatDate(prod.endDate),
+        image: prod.images[0]
+      }))
+    };
+
+    console.log('[API] Response:', response);
+    res.json(response);
+  } catch (error) {
+    console.error('[API] Error fetching product by ID:', error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
+
+// @desc    Delete a product
+// @route   DELETE /api/products/:id
+// @access  Private
+const deleteProduct = asyncHandler(async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const userId = req.user._id;
+
+    // Find the product
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Check ownership
+    if (product.user.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Not authorized to delete this product" });
+    }
+
+    // Delete associated bids
+    // if (Bid) { // Check if Bid model exists
+    //   await Bid.deleteMany({ product: productId });
+    // }
+
+    // Remove product images from Cloudinary if they exist
+    if (product.images && product.images.length > 0) {
+      try {
+        await Promise.all(
+          product.images.map(async (image) => {
+            if (image.public_id) {
+              await cloudinary.uploader.destroy(image.public_id);
+            }
+          })
+        );
+      } catch (cloudinaryError) {
+        console.error("Cloudinary deletion error:", cloudinaryError);
+      }
+    }
+
+    // Delete the product
+    await Product.deleteOne({ _id: productId });
+
+    // Update user's activeBids if necessary
+    if (!product.isDraft && product.status === "active") {
+      const now = new Date();
+      const startDate = new Date(product.startDate);
+      const endDate = new Date(product.endDate);
+      
+      if (startDate <= now && endDate >= now) {
+        await User.findByIdAndUpdate(userId, { 
+          $inc: { activeBids: -1 } 
+        });
+      }
+    }
+
+    // Create alert for product deletion
+    await Alert.create({
+      seller: req.user._id,
+      product: product._id,
+      productName: product.name,
+      action: 'deleted'
+    });
+
+    res.status(200).json({ message: "Product deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    res.status(500).json({ 
+      message: error.message || "Server error during product deletion" 
+    });
+  }
+});
+
+// @desc    Update a product
+// @route   PUT /api/products/:id
+// @access  Private
+const updateProduct = asyncHandler(async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const userId = req.user._id;
+    const updates = req.body;
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Check ownership
+    if (product.user.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Not authorized to update this product" });
+    }
+
+    // Validate dates if being updated
+    if (updates.startDate || updates.endDate) {
+      const startDate = new Date(updates.startDate || product.startDate);
+      const endDate = new Date(updates.endDate || product.endDate);
+      
+      if (startDate >= endDate) {
+        return res.status(400).json({ message: "End date must be after start date" });
+      }
+    }
+
+    // Update slug if name changes
+    if (updates.name && updates.name !== product.name) {
+      const originalSlug = slugify(updates.name, { lower: true, strict: true });
+      let slug = originalSlug;
+      let suffix = 1;
+
+      while (await Product.findOne({ slug, _id: { $ne: productId } })) {
+        slug = `${originalSlug}-${suffix}`;
+        suffix++;
+      }
+      updates.slug = slug;
+    }
+
+    // Update status based on isDraft
+    if (updates.isDraft !== undefined) {
+      updates.status = updates.isDraft ? 'draft' : 'active';
+    }
+
+    // Handle image updates
+    if (updates.images) {
+      // Validate that updates.images is an array of strings
+      if (!Array.isArray(updates.images)) {
+        updates.images = [updates.images];
+      }
+      
+      // Filter out any non-string values
+      updates.images = updates.images.filter(img => typeof img === 'string');
+
+      // Get existing image public_ids from URLs
+      const existingPublicIds = product.images.map(img => {
+        const urlParts = img.split('/');
+        const filename = urlParts[urlParts.length - 1];
+        return filename.split('.')[0];
+      });
+
+      // Get new image public_ids from URLs
+      const newPublicIds = updates.images.map(img => {
+        const urlParts = img.split('/');
+        const filename = urlParts[urlParts.length - 1];
+        return filename.split('.')[0];
+      });
+
+      // Find images to delete
+      const imagesToDelete = existingPublicIds.filter(
+        public_id => !newPublicIds.includes(public_id)
+      );
+
+      // Delete removed images from Cloudinary
+      await Promise.all(
+        imagesToDelete.map(async (public_id) => {
+          try {
+            await cloudinary.uploader.destroy(public_id);
+          } catch (error) {
+            console.error('Error deleting image:', public_id, error);
+          }
+        })
+      );
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    // Create alert for product update
+    await Alert.create({
+      seller: req.user._id,
+      product: product._id,
+      productName: product.name,
+      action: 'edited'
+    });
+
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ message: error.message || "Server error during product update" });
+  }
+});
+
+// @desc    Get similar products
+// @route   GET /api/products/similar/:productId
+// @access  Public
+const getSimilarProducts = asyncHandler(async (req, res) => {
+  try {
+    const { productId } = req.params;
+    
+    // Get the current product
+    const currentProduct = await Product.findById(productId);
+    if (!currentProduct) {
+      res.status(404);
+      throw new Error('Product not found');
+    }
+
+    // Find similar products based on category and country
+    const similarProducts = await Product.find({
+      _id: { $ne: productId }, // Exclude current product
+      category: currentProduct.category,
+      country: currentProduct.country,
+      status: 'active'
+    })
+    .limit(4) // Limit to 4 similar products
+    .select('name startingPrice images category city country startDate endDate');
+
+    res.json(similarProducts);
+  } catch (error) {
+    console.error('Error fetching similar products:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Get draft products for a user
+// @route   GET /api/products/drafts
+// @access  Private
+const getDraftProducts = asyncHandler(async (req, res) => {
+  try {
+    const products = await Product.find({ 
+      user: req.user._id,
+      isDraft: true 
+    })
+    .sort('-createdAt')
+    .select('name startingPrice currentPrice status startDate endDate isDraft category city country images');
+
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching draft products:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = {
   createProduct,
-  updateProduct,
+  getUserProducts,
+  getActiveProducts,
+  getProductById,
   deleteProduct,
-  getUserProducts
+  updateProduct,
+  getSimilarProducts,
+  getDraftProducts
 };

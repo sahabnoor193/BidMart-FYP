@@ -1,37 +1,55 @@
+import { useState, useEffect } from 'react';
 import ProductCard from './ProductCard';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const LatestBids = () => {
-  const products = [
-    {
-      id: 1,
-      name: 'RGB Gaming Keyboard',
-      price: 20,
-      image: '/keyboard.jpg',
-    },
-    {
-      id: 2,
-      name: 'Gaming Monitor',
-      price: 20,
-      image: '/monitor.jpg',
-    },
-    {
-      id: 3,
-      name: 'Gaming Controller',
-      price: 20,
-      image: '/controller.jpg',
-    },
-    {
-      id: 4,
-      name: 'RGB Cooler',
-      price: 20,
-      image: '/cooler.jpg',
-    },
-  ];
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchLatestProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('http://localhost:5000/api/products/active');
+        // Ensure response.data is an array before processing
+        const productsData = Array.isArray(response.data) ? response.data : [];
+        setProducts(productsData.slice(0, 4));
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError(err.message);
+        setLoading(false);
+        setProducts([]); // Set empty array on error
+      }
+    };
+
+    fetchLatestProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-12 bg-white relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">Loading...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-12 bg-white relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center text-red-500">Error: {error}</div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-12 bg-white relative">
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading */}
         <div className="text-center mb-6">
@@ -45,7 +63,6 @@ const LatestBids = () => {
 
         {/* Latest Bids Section */}
         <div className="flex items-center justify-between mb-8">
-          
           <h2 className="text-2xl font-bold text-black flex items-center">
             <span className="bg-red-500 h-6 w-2 rounded-full mr-2"></span>
             Latest Bids
@@ -59,22 +76,21 @@ const LatestBids = () => {
               &gt;
             </button>
           </div>
-
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {Array.isArray(products) && products.map((product) => (
+            <ProductCard key={product._id} product={product} />
           ))}
         </div>
 
         <div className="flex justify-center mt-6">
-      <Link to=".\allproducts">
-        <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded shadow-lg">
-          View All Products
-        </button>
-      </Link>
-    </div>
+          <Link to="/allproducts">
+            <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded shadow-lg">
+              View All Products
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* Horizontal Line */}

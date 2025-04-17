@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
 import Breadcrumbs from '../components/BreadCrumbs';
 import ProductGallery from '../components/ProductGallery';
 import ProductInfo from '../components/ProductInfo';
@@ -9,46 +11,49 @@ import ContactInfo from '../components/ContactInfo';
 import PreviousBids from '../components/PreviousBids';
 
 const ProductPage = () => {
-  const productData = {
-    title: 'Havic HV G-92 Gamepad',
-    country: 'United States',
-    startBid: 99.99,
-    latestBid: 120.0,
-    totalBids: 5,
-    images: {
-      main: 'https://images.unsplash.com/photo-1592840496694-26d035b52b48?auto=format&fit=crop&q=80',
-      thumbnails: [
-        'https://images.unsplash.com/photo-1592840496694-26d035b52b48?auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1592840496694-26d035b52b48?auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1592840496694-26d035b52b48?auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1592840496694-26d035b52b48?auto=format&fit=crop&q=80',
-      ],
-    },
-    details: {
-      quantity: 2,
-      brand: 'Havic',
-      dateStart: '00/00/00',
-      dateEnd: '00/00/00',
-      description:
-        'PlayStation 5 Controller Skin High quality vinyl with air channel adhesive for easy bubble free install & mess free removal Pressure sensitive.',
-    },
-    profile: {
-      name: 'XYZ',
-      years: 'XYZ',
-      time: 'XYZ',
-      bids: 'XYZ',
-    },
-    contact: {
-      name: 'XYZ',
-      email: 'XYZ@gmail.com',
-      phone: 'XYZ-XYZ-XYZ',
-    },
-    previousBids: [
-      { item: 'Item1', price: 100 },
-      { item: 'Item2', price: 150 },
-      { item: 'Item3', price: 200 },
-    ],
-  };
+  const { id } = useParams();
+  const [productData, setProductData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/products/${id}`);
+        setProductData(response.data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-24 flex justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-24 text-center">
+        <p className="text-red-500">Error loading product: {error}</p>
+      </div>
+    );
+  }
+
+  if (!productData) {
+    return (
+      <div className="container mx-auto px-4 py-24 text-center">
+        <p>Product not found</p>
+      </div>
+    );
+  }
 
   const tabs = [
     {
@@ -75,9 +80,9 @@ const ProductPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-24">
-      <Breadcrumbs paths={['Home', 'Product']} />
+      <Breadcrumbs paths={['Home', 'All Products', productData.title]} />
 
-      <div className="grid grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ProductGallery
           mainImage={productData.images.main}
           thumbnails={productData.images.thumbnails}
@@ -88,6 +93,7 @@ const ProductPage = () => {
           startBid={productData.startBid}
           latestBid={productData.latestBid}
           totalBids={productData.totalBids}
+          productId={id}
         />
       </div>
 

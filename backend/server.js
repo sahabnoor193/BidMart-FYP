@@ -14,6 +14,8 @@ const buyerRoutes = require("./routes/buyer");
 const userRoutes = require("./routes/user");
 const productRoutes = require("./routes/productRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+const favoriteRoutes = require("./routes/favoriteRoutes");
+const alertRoutes = require("./routes/alertRoutes");
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -49,6 +51,8 @@ app.use("/api/user", userRoutes);
 app.use("/api/buyer", buyerRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/favorites", favoriteRoutes);
+app.use("/api/seller/alerts", alertRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorHandler);

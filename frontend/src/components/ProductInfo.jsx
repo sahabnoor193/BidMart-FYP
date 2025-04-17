@@ -1,6 +1,6 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
+import axios from 'axios';
 
 const ProductInfo = ({
   title = 'Product Title',
@@ -8,9 +8,43 @@ const ProductInfo = ({
   startBid = 0,
   latestBid = 0,
   totalBids = 0,
+  productId,
 }) => {
   const [bidAmount, setBidAmount] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      try {
+        console.log('[ProductInfo] Checking favorite status for product:', productId);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('[ProductInfo] No token found, user not logged in');
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await axios.get(
+          `http://localhost:5000/api/favorites/${productId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        console.log('[ProductInfo] Favorite status response:', response.data);
+        setIsFavorite(response.data.isFavorited);
+      } catch (error) {
+        console.error('[ProductInfo] Error checking favorite status:', error.response?.data || error.message);
+        if (error.response?.status === 401) {
+          console.log('[ProductInfo] User not authenticated');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (productId) {
+      checkFavoriteStatus();
+    }
+  }, [productId]);
 
   const handleBidSubmit = () => {
     const numericBid = parseFloat(bidAmount);
@@ -19,6 +53,32 @@ const ProductInfo = ({
       return;
     }
     // Handle bid submission logic here
+  };
+
+  const toggleFavorite = async () => {
+    try {
+      console.log('[ProductInfo] Toggling favorite for product:', productId);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('[ProductInfo] No token found, redirecting to login');
+        // You might want to redirect to login here
+        return;
+      }
+
+      const response = await axios.post(
+        `http://localhost:5000/api/favorites/${productId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log('[ProductInfo] Toggle favorite response:', response.data);
+      setIsFavorite(response.data.isFavorited);
+    } catch (error) {
+      console.error('[ProductInfo] Error toggling favorite:', error.response?.data || error.message);
+      if (error.response?.status === 401) {
+        console.log('[ProductInfo] User not authenticated');
+        // You might want to redirect to login here
+      }
+    }
   };
 
   return (
@@ -68,8 +128,9 @@ const ProductInfo = ({
               isFavorite 
                 ? 'bg-red-50 border-red-200' 
                 : 'hover:bg-gray-50'
-            }`}
-            onClick={() => setIsFavorite(!isFavorite)}
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={toggleFavorite}
+            disabled={isLoading}
             aria-label="Add to favorites"
           >
             <Heart 
