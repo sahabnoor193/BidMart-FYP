@@ -37,6 +37,14 @@ useEffect(() => {
         });
         
         const product = response.data;
+
+              // Adjust dates to local time zone
+      const toLocalDate = (dateString) => {
+        const date = new Date(dateString);
+        const offset = date.getTimezoneOffset(); // Offset in minutes
+        date.setMinutes(date.getMinutes() - offset); // Adjust to local time
+        return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      };
         setFormData({
           name: product.title,
           description: product.details?.description || '',
@@ -48,10 +56,8 @@ useEffect(() => {
           bidQuantity: product.details?.bidQuantity?.toString() || '1',
           bidIncrease: product.details?.bidIncrease?.toString() || '5',
           category: product.category,
-          startDate: product.details?.dateStart ? 
-            new Date(product.details.dateStart).toISOString().split('T')[0] : '',
-          endDate: product.details?.dateEnd ? 
-            new Date(product.details.dateEnd).toISOString().split('T')[0] : '',
+          startDate: product.details?.dateStart ? toLocalDate(product.details.dateStart) : '',
+          endDate: product.details?.dateEnd ? toLocalDate(product.details.dateEnd) : '',
           isDraft: product.isDraft
         });
         
