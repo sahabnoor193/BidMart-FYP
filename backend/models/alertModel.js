@@ -18,7 +18,7 @@ const alertSchema = mongoose.Schema({
   action: {
     type: String,
     required: true,
-    enum: ['added', 'edited', 'deleted', 'draft', 'favorited']
+    enum: ['added', 'edited', 'deleted', 'draft', 'favorited', 'ended']
   },
   read: {
     type: Boolean,

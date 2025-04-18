@@ -189,7 +189,8 @@ const getActiveProducts = asyncHandler(async (req, res) => {
     const products = await Product.find({ 
       startDate: { $lte: now },
       endDate: { $gte: now },
-      isDraft: false
+      isDraft: false,
+      status: 'active',
     })
     .sort('-createdAt')
     .select('name startingPrice currentPrice status startDate endDate isDraft category city country images');

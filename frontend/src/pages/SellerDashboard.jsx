@@ -352,6 +352,8 @@ const SellerDashboard = () => {
         return <FaSave className="text-yellow-500" />;
       case 'favorited':
         return <FaHeart className="text-pink-500" />;
+      case 'ended':
+        return <FaExchangeAlt className="text-orange-500" />;
       default:
         return <FaStar className="text-gray-500" />;
     }
@@ -369,6 +371,8 @@ const SellerDashboard = () => {
         return `Product "${productName}" has been saved as draft`;
       case 'favorited':
         return `Product "${productName}" has been added to favorites`;
+      case 'ended':
+        return `Your product "${productName}" has ended`;
       default:
         return '';
     }
