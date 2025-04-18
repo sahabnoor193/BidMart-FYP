@@ -170,6 +170,10 @@ const createProduct = asyncHandler(async (req, res) => {
 // @route   GET /api/products/user/:userId
 // @access  Private
 const getUserProducts = asyncHandler(async (req, res) => {
+    const requestedUserId = req.params.userId;
+  if (requestedUserId !== req.user._id.toString()) {
+    return res.status(403).json({ message: "Unauthorized access" });
+  }
   const products = await Product.find({ user: req.params.userId })
     .sort("-createdAt")
     .populate("user", "name email");
