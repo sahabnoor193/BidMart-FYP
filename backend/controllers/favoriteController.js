@@ -32,6 +32,9 @@ const toggleFavorite = asyncHandler(async (req, res) => {
       // Update seller's total favorites count
       await User.findByIdAndUpdate(product.user, { $inc: { totalFavorites: -1 } });
 
+      // Decrement the user's favorites count
+      await User.findByIdAndUpdate(userId, { $inc: { favourites: -1 } });
+
       res.json({ isFavorited: false });
     } else {
       // Add to favorites
@@ -46,6 +49,9 @@ const toggleFavorite = asyncHandler(async (req, res) => {
       // Update seller's total favorites count
       await User.findByIdAndUpdate(product.user, { $inc: { totalFavorites: 1 } });
 
+      // Increment the user's favorites count
+      await User.findByIdAndUpdate(userId, { $inc: { favourites: 1 } });
+
       // Create alert for product being favorited
       await Alert.create({
         seller: product.user,
@@ -53,6 +59,8 @@ const toggleFavorite = asyncHandler(async (req, res) => {
         productName: product.name,
         action: 'favorited'
       });
+
+
 
       res.json({ isFavorited: true });
     }
