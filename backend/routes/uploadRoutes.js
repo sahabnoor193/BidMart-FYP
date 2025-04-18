@@ -64,22 +64,35 @@ router.post('/', protect, upload.array('images', 5), handleMulterError, async (r
 router.delete('/', protect, async (req, res) => {
   try {
     const { publicId } = req.body;
-    
+    console.log('Public ID received for deletion:', publicId);
+
     if (!publicId) {
       return res.status(400).json({ message: 'No public ID provided' });
     }
 
-    if (process.env.NODE_ENV === 'production') {
-      await cloudinary.uploader.destroy(publicId);
-    } else {
-      // For local development, delete the file from uploads folder
-      const filePath = path.join(__dirname, '../uploads', publicId);
-      fs.unlink(filePath, err => {
-        if (err) console.error('Error deleting local file:', err);
-      });
+    if (typeof publicId !== 'string') {
+      return res.status(400).json({ message: 'Invalid public ID format' });
     }
 
-    res.status(200).json({ message: 'Image deleted successfully' });
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Deleting from Cloudinary with publicId:', publicId);
+      await cloudinary.uploader.destroy(publicId);
+      return res.status(200).json({ message: 'Image deleted successfully' });
+    } else {
+      // For local development, delete the file from uploads folder
+      const fileName = publicId.split('/').pop(); // Get the last part of the URL
+      const filePath = path.join(__dirname, '../uploads', fileName);
+      console.log('Deleting file from path:', filePath);
+
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error('Error deleting local file:', err);
+          return res.status(500).json({ message: 'Failed to delete local file' });
+        }
+        console.log('Local file deleted successfully');
+        return res.status(200).json({ message: 'Image deleted successfully' });
+      });
+    }
   } catch (error) {
     console.error('Delete error:', error);
     res.status(500).json({ message: 'Image deletion failed', error: error.message });

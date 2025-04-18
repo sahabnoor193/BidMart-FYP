@@ -60,12 +60,40 @@ const AddProduct = () => {
     }
   };
 
-  const removeImage = (index) => {
+  // const removeImage = (index) => {
+  //   const newImages = [...productImages];
+  //   newImages.splice(index, 1);
+  //   setProductImages(newImages);
+  //   if (selectedImage >= index) {
+  //     setSelectedImage(Math.max(0, selectedImage - 1));
+  //   }
+  // };
+
+  const removeImage = async (index) => {
+    const imageToRemove = productImages[index];
+    console.log('Removing image:', imageToRemove);
+  
     const newImages = [...productImages];
     newImages.splice(index, 1);
     setProductImages(newImages);
     if (selectedImage >= index) {
       setSelectedImage(Math.max(0, selectedImage - 1));
+    }
+  
+    try {
+      const token = localStorage.getItem('token');
+      const publicId = imageToRemove.includes('http') 
+      ? imageToRemove.split('/').pop() // Extract file name from URL
+      : imageToRemove;
+      const response = await axios.delete('http://localhost:5000/api/upload', {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { publicId }
+      });
+      console.log('Delete response:', response.data);
+      toast.success('Image deleted successfully');
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast.error('Failed to delete image');
     }
   };
 

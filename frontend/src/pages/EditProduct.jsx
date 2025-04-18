@@ -104,12 +104,50 @@ useEffect(() => {
       }
     };
   
-    const removeImage = (index) => {
+    // const removeImage = (index) => {
+    //   const newImages = [...productImages];
+    //   newImages.splice(index, 1);
+    //   setProductImages(newImages);
+    //   if (selectedImage >= index) {
+    //     setSelectedImage(Math.max(0, selectedImage - 1));
+    //   }
+    // };
+
+    const removeImage = async (index) => {
+      const imageToRemove = productImages[index];
+      console.log('Removing image:', imageToRemove);
+    
       const newImages = [...productImages];
       newImages.splice(index, 1);
       setProductImages(newImages);
       if (selectedImage >= index) {
         setSelectedImage(Math.max(0, selectedImage - 1));
+      }
+    
+      try {
+        const token = localStorage.getItem('token');
+        let publicId;
+
+        if (typeof imageToRemove === 'string') {
+          publicId = imageToRemove.split('/').pop(); // Extract file name from URL
+        } else if (imageToRemove.public_id) {
+          publicId = imageToRemove.public_id;
+        } else if (imageToRemove.url) {
+          publicId = imageToRemove.url.split('/').pop(); // Extract file name from URL
+        } else {
+          throw new Error('Invalid image format');
+        }
+        console.log('Public ID being sent:', publicId);
+
+        const response = await axios.delete('http://localhost:5000/api/upload', {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { publicId }
+        });
+        console.log('Delete response:', response.data);
+        toast.success('Image deleted successfully');
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        toast.error('Failed to delete image');
       }
     };
   
