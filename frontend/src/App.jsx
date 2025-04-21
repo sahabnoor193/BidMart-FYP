@@ -20,6 +20,7 @@ import EditProduct from "./pages/EditProduct";
 import ContactForm from './pages/ContactForm';
 import FeedbackForm from './pages/FeedbackForm';
 import AboutUs from './pages/AboutUs';
+import FAQPage from './pages/FAQPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -78,6 +79,8 @@ function App() {
             <Route path="/contact" element={<ContactForm />} />
             <Route path="/feedback" element={<FeedbackForm />} />
             <Route path="/about" element={<AboutUs />} />
+            <Route path="/faqs" element={<FAQPage />} />
+            {/* Redirect to home if no match */}
           </Routes>
         </main>
         <Footer />
