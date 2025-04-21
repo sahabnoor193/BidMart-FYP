@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from "react";
 import { jwtDecode } from 'jwt-decode';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Footer from './components/Footer';
@@ -15,6 +17,8 @@ import SellerDashboard from "./pages/SellerDashboard";
 import AddProduct from "./pages/AddProduct";
 import SellerProducts from "./pages/SellerProducts";
 import EditProduct from "./pages/EditProduct";
+import ContactForm from './pages/ContactForm';
+import FeedbackForm from './pages/FeedbackForm';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -70,9 +74,12 @@ function App() {
             <Route path="/dashboard/products" element={<SellerProducts />} />
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/dashboard/products/edit/:productId" element={<EditProduct />} />
+            <Route path="/contact" element={<ContactForm />} />
+            <Route path="/feedback" element={<FeedbackForm />} />
           </Routes>
         </main>
         <Footer />
+        <ToastContainer/>
       </div>
     </Router>
   );
