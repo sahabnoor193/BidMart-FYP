@@ -19,6 +19,7 @@ import SellerProducts from "./pages/SellerProducts";
 import EditProduct from "./pages/EditProduct";
 import ContactForm from './pages/ContactForm';
 import FeedbackForm from './pages/FeedbackForm';
+import AboutUs from './pages/AboutUs';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -76,6 +77,7 @@ function App() {
             <Route path="/dashboard/products/edit/:productId" element={<EditProduct />} />
             <Route path="/contact" element={<ContactForm />} />
             <Route path="/feedback" element={<FeedbackForm />} />
+            <Route path="/about" element={<AboutUs />} />
           </Routes>
         </main>
         <Footer />
