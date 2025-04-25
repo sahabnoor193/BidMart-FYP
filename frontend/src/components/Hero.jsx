@@ -1,7 +1,19 @@
 // src/components/Hero.jsx
 import heroimage from "../assets/HeroSection.png";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/allproducts");
+    } else {
+      navigate("/signup");
+    }
+  };
+
   return (
     <section
       className="bg-black bg-cover bg-center "
@@ -17,7 +29,10 @@ const Hero = () => {
           Explore a variety of products and place your bids with ease. Start
           buying and selling with confidence today!
         </p>
-        <button className="px-6 py-3 bg-primary text-white font-medium rounded-md hover:bg-opacity-90">
+        <button 
+          onClick={handleGetStarted}
+          className="px-6 py-3 bg-primary text-white font-medium rounded-md hover:bg-opacity-90"
+        >
           Get Started
         </button>
       </div>

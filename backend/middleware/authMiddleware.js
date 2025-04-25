@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 
-// Enhanced protect middleware with cookie support
+// Enhanced protect middleware with better error handling
 const protect = asyncHandler(async (req, res, next) => {
   let token;
 
@@ -15,13 +15,19 @@ const protect = asyncHandler(async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from the token
-      req.user = await User.findById(decoded.id).select('-password');
+      const user = await User.findById(decoded.id).select('-password');
+      
+      if (!user) {
+        res.status(401);
+        throw new Error('User not found');
+      }
 
+      req.user = user;
       next();
     } catch (error) {
-      console.error(error);
+      console.error('[Auth Middleware] Token verification failed:', error.message);
       res.status(401);
-      throw new Error('Not authorized');
+      throw new Error('Not authorized, token failed');
     }
   }
 
@@ -41,20 +47,20 @@ const admin = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Optional: Token refresh middleware
+// Token refresh middleware
 const refreshToken = asyncHandler(async (req, res, next) => {
-  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+  const token = req.headers.authorization?.split(' ')[1];
   
-  if (!refreshToken) {
+  if (!token) {
     return next();
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
 
-    if (!user || user.refreshToken !== refreshToken) {
-      console.warn('[Auth Middleware] Invalid refresh token');
+    if (!user) {
+      console.warn('[Auth Middleware] User not found for token');
       return next();
     }
 
@@ -64,7 +70,7 @@ const refreshToken = asyncHandler(async (req, res, next) => {
     console.log('[Auth Middleware] Token refreshed successfully');
     next();
   } catch (error) {
-    console.error('[Auth Middleware] Refresh token failed:', error.message);
+    console.error('[Auth Middleware] Token refresh failed:', error.message);
     next();
   }
 });
@@ -72,7 +78,7 @@ const refreshToken = asyncHandler(async (req, res, next) => {
 // Helper function to generate tokens
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '30d',
+    expiresIn: '30d'
   });
 };
 

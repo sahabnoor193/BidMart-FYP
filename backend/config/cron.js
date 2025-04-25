@@ -77,11 +77,17 @@ cron.schedule('0 * * * *', async () => {
     console.log('[CRON] Running job to update product statuses and notify sellers');
 
     const now = new Date();
+    const utcNow = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    );
 
     // Find products whose endDate has passed and are still active
     const productsToUpdate = await Product.find({
-      endDate: { $lt: now },
+      endDate: { $lt: new Date(utcNow) },
       status: 'active',
+      isDraft: false
     });
 
     // Update the status of these products to 'ended'
@@ -95,10 +101,10 @@ cron.schedule('0 * * * *', async () => {
 
     // Create alerts for the sellers of these products
     const alerts = productsToUpdate.map(product => ({
-      seller: product.user, // Assuming `user` is the field for the seller
+      seller: product.user,
       product: product._id,
       productName: product.name,
-      action: 'ended', // Custom action for ended products
+      action: 'ended',
       createdAt: new Date(),
     }));
 
@@ -117,7 +123,12 @@ cron.schedule('0 * * * *', async () => {
     });
 
     for (const [sellerId, count] of Object.entries(sellerUpdates)) {
-      await User.findByIdAndUpdate(sellerId, { $inc: { endedBids: count } });
+      await User.findByIdAndUpdate(sellerId, { 
+        $inc: { 
+          endedBids: count,
+          activeBids: -count 
+        } 
+      });
     }
 
     console.log('[CRON] Updated ended bids count for sellers');

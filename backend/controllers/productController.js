@@ -72,31 +72,37 @@ const createProduct = asyncHandler(async (req, res) => {
     const endDateObj = new Date(endDate);
     const now = new Date();
 
-    // Set all dates to UTC midnight for comparison
-    const utcStart = Date.UTC(
-      startDateObj.getFullYear(),
-      startDateObj.getMonth(),
-      startDateObj.getDate()
-    );
-    const utcNow = Date.UTC(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
-
+    // Validate date objects
     if (isNaN(startDateObj.getTime())) {
-      throw new Error("Invalid start date");
+      throw new Error("Invalid start date format");
     }
     if (isNaN(endDateObj.getTime())) {
-      throw new Error("Invalid end date");
+      throw new Error("Invalid end date format");
     }
+
+    // Set all dates to UTC midnight for comparison
+    const utcStart = Date.UTC(
+      startDateObj.getUTCFullYear(),
+      startDateObj.getUTCMonth(),
+      startDateObj.getUTCDate()
+    );
+    const utcEnd = Date.UTC(
+      endDateObj.getUTCFullYear(),
+      endDateObj.getUTCMonth(),
+      endDateObj.getUTCDate()
+    );
+    const utcNow = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    );
 
     // Only validate dates if not a draft
     if (!isDraft) {
       if (utcStart < utcNow) {
         throw new Error("Start date cannot be in the past");
       }
-      if (endDateObj <= startDateObj) {
+      if (utcEnd <= utcStart) {
         throw new Error("End date must be after start date");
       }
     }
@@ -132,13 +138,22 @@ const createProduct = asyncHandler(async (req, res) => {
       status: isDraft ? 'draft' : 'active'
     });
 
-    // Create alert for product creation
-    await Alert.create({
-      seller: req.user._id,
-      product: product._id,
-      productName: product.name,
-      action: isDraft ? 'draft' : 'added'
-    });
+          // Replace both Alert.create calls with:
+          await Alert.create({
+            user: product.user,
+            userType: 'seller',
+            product: product._id,
+            productName: product.name,
+            action: isDraft ? 'draft' : 'added'
+          });
+    
+          await Alert.create({
+            user: userId,
+            userType: 'buyer',
+            product: product._id,
+            productName: product.name,
+           action: isDraft ? 'draft' : 'added'
+          });
 
     console.log('Created product:', product);
     
@@ -184,13 +199,21 @@ const getUserProducts = asyncHandler(async (req, res) => {
 const getActiveProducts = asyncHandler(async (req, res) => {
   try {
     const now = new Date();
-    console.log('[API] Fetching active products at:', now.toISOString());
+    const utcNow = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    );
+    
+    console.log('[API] Fetching active products at:', new Date(utcNow).toISOString());
     
     const products = await Product.find({ 
-      startDate: { $lte: now },
-      endDate: { $gte: now },
-      isDraft: false,
-      status: 'active',
+      $and: [
+        { startDate: { $lte: new Date(utcNow) } },
+        { endDate: { $gt: new Date(utcNow) } },
+        { isDraft: false },
+        { status: 'active' }
+      ]
     })
     .sort('-createdAt')
     .select('name startingPrice currentPrice status startDate endDate isDraft category city country images');
@@ -340,23 +363,47 @@ const deleteProduct = asyncHandler(async (req, res) => {
     // Update user's activeBids if necessary
     if (!product.isDraft && product.status === "active") {
       const now = new Date();
+      const utcNow = Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate()
+      );
       const startDate = new Date(product.startDate);
       const endDate = new Date(product.endDate);
-      
-      if (startDate <= now && endDate >= now) {
+      const utcStart = Date.UTC(
+        startDate.getUTCFullYear(),
+        startDate.getUTCMonth(),
+        startDate.getUTCDate()
+      );
+      const utcEnd = Date.UTC(
+        endDate.getUTCFullYear(),
+        endDate.getUTCMonth(),
+        endDate.getUTCDate()
+      );
+      if (utcStart <= utcNow && utcEnd >= utcNow) {
         await User.findByIdAndUpdate(userId, { 
           $inc: { activeBids: -1 } 
         });
       }
     }
 
-    // Create alert for product deletion
-    await Alert.create({
-      seller: req.user._id,
-      product: product._id,
-      productName: product.name,
-      action: 'deleted'
-    });
+        // Replace both Alert.create calls with:
+              await Alert.create({
+                user: product.user,
+                userType: 'seller',
+                product: product._id,
+                productName: product.name,
+                action: 'deleted'
+              });
+        
+              await Alert.create({
+                user: userId,
+                userType: 'buyer',
+                product: product._id,
+                productName: product.name,
+                action: 'deleted'
+              });
+    
 
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
@@ -391,7 +438,22 @@ const updateProduct = asyncHandler(async (req, res) => {
       const startDate = new Date(updates.startDate || product.startDate);
       const endDate = new Date(updates.endDate || product.endDate);
       
-      if (startDate >= endDate) {
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+      }
+
+      const utcStart = Date.UTC(
+        startDate.getUTCFullYear(),
+        startDate.getUTCMonth(),
+        startDate.getUTCDate()
+      );
+      const utcEnd = Date.UTC(
+        endDate.getUTCFullYear(),
+        endDate.getUTCMonth(),
+        endDate.getUTCDate()
+      );
+      
+      if (utcStart >= utcEnd) {
         return res.status(400).json({ message: "End date must be after start date" });
       }
     }
@@ -462,12 +524,23 @@ const updateProduct = asyncHandler(async (req, res) => {
     );
 
     // Create alert for product update
-    await Alert.create({
-      seller: req.user._id,
-      product: product._id,
-      productName: product.name,
-      action: 'edited'
-    });
+            
+            await Alert.create({
+              user: product.user,
+              userType: 'seller',
+              product: product._id,
+              productName: product.name,
+              action: 'edited'
+            });
+      
+            await Alert.create({
+              user: userId,
+              userType: 'buyer',
+              product: product._id,
+              productName: product.name,
+              action: 'edited'
+            });
+    
 
     res.status(200).json(updatedProduct);
   } catch (error) {

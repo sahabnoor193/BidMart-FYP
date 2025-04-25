@@ -117,7 +117,7 @@ const SellerDashboard = () => {
               'Content-Type': 'application/json'
             }
           }),
-          axios.get('http://localhost:5000/api/seller/alerts', {
+          axios.get('http://localhost:5000/api/alerts', {
             headers: { 
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -179,7 +179,7 @@ const SellerDashboard = () => {
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userType');
     localStorage.removeItem('userName');
-    navigate('/login');
+    navigate('/signin', { replace: true });
   };
 
   const handleSwitchUserType = async () => {
@@ -320,7 +320,7 @@ const SellerDashboard = () => {
   const handleMarkAlertAsRead = async (alertId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/seller/alerts/${alertId}/read`, {}, {
+      await axios.put(`http://localhost:5000/api/alerts/${alertId}/read`, {}, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -373,6 +373,8 @@ const SellerDashboard = () => {
         return `Product "${productName}" has been added to favorites`;
       case 'ended':
         return `Your product "${productName}" has ended`;
+      case 'new-bid':
+        return  `A new bid has been placed on your product "${productName}"`;
       default:
         return '';
     }
@@ -392,7 +394,7 @@ const SellerDashboard = () => {
   const handleRemoveAlert = async (alertId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/seller/alerts/${alertId}`, {
+      await axios.delete(`http://localhost:5000/api/alerts/${alertId}`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'

@@ -15,10 +15,10 @@ exports.getBuyerDashboard = async (req, res) => {
         .sort({ createdAt: -1 })
         .populate({
           path: 'productId',
-          select: 'name sellerId',
+          select: 'name user',
           populate: {
-            path: 'sellerId',
-            select: 'name email profilePicture'
+            path: 'user',
+            select: 'name email'
           }
         })
         .populate({
@@ -30,9 +30,8 @@ exports.getBuyerDashboard = async (req, res) => {
         itemName: bid.productId?.name || 'Deleted Item',
         bidAmount: bid.paymentId?.amount || bid.amount,
         paymentDate: bid.paymentId?.createdAt,
-        sellerName: bid.productId?.sellerId?.name || 'Unknown Seller',
-        sellerEmail: bid.productId?.sellerId?.email,
-        // sellerAvatar: bid.productId?.sellerId?.profilePicture
+        sellerName: bid.productId?.user?.name || 'Unknown Seller',
+        sellerEmail: bid.productId?.user?.email
       }));
   
       res.json({

@@ -1,35 +1,20 @@
-// const express = require("express");
-// const passport = require("passport");
-// const { register, login, googleLogin, facebookLogin, verifyOTP, resendOTP, logout, loginStatus, googleRegister } = require("../controllers/authController");
-
-// const router = express.Router();
-
-// router.post("/register", register);
-// router.post("/login", login);
-
-// // Google OAuth
-// router.get("/session-data", (req, res) => {
-//   res.json(req.session.tempUser || {});
-// });
-// router.post("/register-google", googleRegister);
-
-// // Facebook OAuth
-// router.get("/facebook", passport.authenticate("facebook", { scope: ["email"] }));
-// router.get("/facebook/callback", passport.authenticate("facebook", { session: false }), facebookLogin);
-
-//   // Email verification
-// router.post('/verify-otp', verifyOTP);    // OTP verification
-// router.post("/resend-otp", resendOTP); // Resend OTP if not received
-
-// module.exports = router;
 const express = require("express");
 const passport = require("passport");
-const { register, login, googleLogin, facebookLogin, verifyOTP, resendOTP, logout, loginStatus, googleRegister } = require("../controllers/authController");
+const { register, login, googleLogin, facebookLogin, verifyOTP, resendOTP, logout, loginStatus, googleRegister, checkToken } = require("../controllers/authController");
+const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// Public routes
 router.post("/register", register);
 router.post("/login", login);
+router.post("/verify-otp", verifyOTP);
+router.post("/resend-otp", resendOTP);
+
+// Protected routes
+router.get("/check-token", protect, checkToken);
+router.post("/logout", protect, logout);
+router.get("/login-status", protect, loginStatus);
 
 // Google OAuth
 router.get("/session-data", (req, res) => {
@@ -40,9 +25,5 @@ router.post("/register-google", googleRegister);
 // Facebook OAuth
 router.get("/facebook", passport.authenticate("facebook", { scope: ["email"] }));
 router.get("/facebook/callback", passport.authenticate("facebook", { session: false }), facebookLogin);
-
-  // Email verification
-router.post('/verify-otp', verifyOTP);    // OTP verification
-router.post("/resend-otp", resendOTP); // Resend OTP if not received
 
 module.exports = router;

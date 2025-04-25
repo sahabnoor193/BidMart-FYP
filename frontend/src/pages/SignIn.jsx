@@ -42,18 +42,18 @@ const SignIn = ({ setIsAuthenticated }) => {
         localStorage.setItem("userName", data.name);
         setIsAuthenticated(true);
 
-        // ✅ Decode the token to get user type
+        // Decode the token to get user type
         const decodedToken = jwtDecode(data.token);
         const userType = decodedToken.type || "buyer"; // Default to buyer if type is missing
 
         localStorage.setItem("userType", userType);
         setIsAuthenticated(true);
 
-        // ✅ Redirect based on user type
+        // Redirect based on user type
         if (userType === "seller") {
-          navigate("/seller-dashboard"); // Redirect to Seller Dashboard
+          navigate("/seller-dashboard", { replace: true }); // Use replace: true
         } else {
-          navigate("/buyer-dashboard"); // Redirect to Buyer Dashboard
+          navigate("/buyer-dashboard", { replace: true }); // Use replace: true
         }
       } else {
         setError(data.message || "Invalid email or password.");

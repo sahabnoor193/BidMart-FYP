@@ -17,11 +17,10 @@ import SellerDashboard from "./pages/SellerDashboard";
 import AddProduct from "./pages/AddProduct";
 import SellerProducts from "./pages/SellerProducts";
 import EditProduct from "./pages/EditProduct";
-import ContactForm from './pages/ContactForm';
-import FeedbackForm from './pages/FeedbackForm';
-import AboutUs from './pages/AboutUs';
-import FAQPage from './pages/FAQPage';
-
+import ContactForm from "./pages/ContactForm";
+import FeedbackForm from "./pages/FeedbackForm";
+import AboutUs from "./pages/AboutUs";
+import FAQPage from "./pages/FAQPage";
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -78,13 +77,12 @@ function App() {
             <Route path="/dashboard/products/edit/:productId" element={<EditProduct />} />
             <Route path="/contact" element={<ContactForm />} />
             <Route path="/feedback" element={<FeedbackForm />} />
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/faqs" element={<FAQPage />} />
-            {/* Redirect to home if no match */}
+            <Route path="/aboutus" element={<AboutUs />} />
+            <Route path="/faq" element={<FAQPage />} />
           </Routes>
         </main>
         <Footer />
-        <ToastContainer/>
+        <ToastContainer />
       </div>
     </Router>
   );

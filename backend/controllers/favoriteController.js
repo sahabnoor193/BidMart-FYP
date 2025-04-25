@@ -53,14 +53,22 @@ const toggleFavorite = asyncHandler(async (req, res) => {
       await User.findByIdAndUpdate(userId, { $inc: { favourites: 1 } });
 
       // Create alert for product being favorited
+      // Replace both Alert.create calls with:
       await Alert.create({
-        seller: product.user,
+        user: product.user,
+        userType: 'seller',
         product: product._id,
         productName: product.name,
         action: 'favorited'
       });
 
-
+      await Alert.create({
+        user: userId,
+        userType: 'buyer',
+        product: product._id,
+        productName: product.name,
+        action: 'favorited-product'
+      });
 
       res.json({ isFavorited: true });
     }

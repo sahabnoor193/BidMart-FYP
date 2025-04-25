@@ -189,7 +189,7 @@ exports.login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, type: userType }, // Include email in the payload
       process.env.JWT_SECRET,
-      { expiresIn: rememberMe ? "30d" : "1d" } // 30 days if checked, 1 day if not
+      { expiresIn: rememberMe ? '30d' : '1d' }, // 30 days if checked, 1 day if not
     );
     console.log("✅ User logged in:", email, "as", userType);
     res.status(200).json({ message: "Login successful", token, type: userType });
@@ -436,4 +436,40 @@ exports.loginStatus = (req, res) => {
     console.error("❌ Login Status Error:", error);
     return res.json(false);
   }
+};
+
+exports.checkToken = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        if (!token) {
+            return res.status(401).json({ valid: false });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password');
+
+        if (!user) {
+            return res.status(401).json({ valid: false });
+        }
+
+        res.json({ valid: true, user });
+    } catch (error) {
+        console.error('Token check failed:', error);
+        res.status(401).json({ valid: false });
+    }
+};
+
+exports.logout = async (req, res) => {
+    try {
+        // In a real application, you might want to:
+        // 1. Add the token to a blacklist
+        // 2. Clear any refresh tokens
+        // 3. Clear any session data
+        
+        res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ error: 'Server error during logout' });
+    }
 };

@@ -75,7 +75,7 @@ exports.switchAccount = async (req, res) => {
       const token = jwt.sign(
         { id: oppositeAccount._id, type: newType },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN }
+        { expiresIn: '30d' }
       );
 
       return res.json({

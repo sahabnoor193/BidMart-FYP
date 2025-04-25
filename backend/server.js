@@ -18,6 +18,9 @@ const favoriteRoutes = require("./routes/favoriteRoutes");
 const alertRoutes = require("./routes/alertRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
+const bidRoutes = require("./routes/bid");
+const mongoose = require('mongoose');
+const configureSocket = require('./config/socket');
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -54,12 +57,22 @@ app.use("/api/buyer", buyerRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/favorites", favoriteRoutes);
-app.use("/api/seller/alerts", alertRoutes);
+app.use("/api/alerts", alertRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/bids", bidRoutes);
+
+// Create HTTP server
+const server = require('http').createServer(app);
+
+// Configure Socket.IO
+const io = configureSocket(server);
+
+// Make io accessible to routes
+app.set('io', io);
 
 // Error handling middleware (must be after routes)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
