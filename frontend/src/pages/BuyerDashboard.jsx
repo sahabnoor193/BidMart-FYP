@@ -513,14 +513,20 @@
 
 // export default BuyerDashboard;
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { FaList, FaCheckCircle, FaStar, FaExchangeAlt, FaTimes, FaBell } from 'react-icons/fa';
 import { jwtDecode } from 'jwt-decode';
 
+
 const BuyerDashboard = () => {
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [userType, setUserType] = useState('buyer');
+  const location = useLocation();
   const [buyerData, setBuyerData] = useState({
     requestedBids: 0,
     acceptedBids: 0,
@@ -561,6 +567,17 @@ const BuyerDashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
+    // Check if navigation state contains activeTab and conversationId
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+
+      if (location.state.activeTab === 'chats' && location.state.conversationId) {
+        setSelectedConversation(location.state.conversationId);
+      }
+    }
+  }, [location.state]);
+
+  useEffect(() => {
     const token = localStorage.getItem('token');
     console.log('[Auth Check] Checking authentication status');
     if (!token) {
@@ -594,6 +611,9 @@ const BuyerDashboard = () => {
         const profileResponse = await axios.get("http://localhost:5000/api/user/profile", {
           headers: { Authorization: `Bearer ${token}` }
         });
+
+        console.log('User profile data fetched:', profileResponse.data);
+        
         
         const profile = profileResponse.data;
         setUserProfile({
@@ -604,6 +624,10 @@ const BuyerDashboard = () => {
           phone: profile.phone || '',
           city: profile.city || ''
         });
+
+        
+        console.log('Profile data:', profile);
+        console.log('User stored in localStorage:', JSON.parse(localStorage.getItem('user')));
 
         setLoading(false);
       } catch (err) {
@@ -1016,16 +1040,209 @@ const BuyerDashboard = () => {
     );
   };
 
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user')); // Retrieve the user object here
+
+        if (!user || !user._id) {
+          console.error('User not found in localStorage');
+          return;
+        }
+        const response = await axios.get(`http://localhost:5000/api/conversations/${user._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setConversations(response.data);
+      } catch (error) {
+        console.error('Error fetching conversations:', error);
+      }
+    };
+
+    if (activeTab === 'chats') {
+      fetchConversations();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedConversation) return;
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(
+          `http://localhost:5000/api/messages/${selectedConversation}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setMessages(response.data);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+
+    fetchMessages();
+  }, [selectedConversation]);
+
+    // Add this new render function
+    const 
+    renderChatsContent = () => {
+      const user = JSON.parse(localStorage.getItem('user'));
+
+      const fetchMessages = async (conversationId) => {
+        if (!conversationId) return;
+  
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get(
+            `http://localhost:5000/api/messages/${conversationId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          setMessages(response.data);
+        } catch (error) {
+          console.error('Error fetching messages:', error);
+        }
+      };
+    
+      const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!newMessage.trim()) return;
+    
+        try {
+          const token = localStorage.getItem('token');
+          await axios.post(
+            'http://localhost:5000/api/messages',
+            {
+              conversationId: selectedConversation,
+              senderId: user._id,
+              text: newMessage,
+            },
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+              // Optimistically update the conversations state
+          setConversations((prevConversations) =>
+          prevConversations.map((conversation) =>
+          conversation._id === selectedConversation
+          ? { ...conversation, lastMessage: newMessage }
+          : conversation
+      )
+    );
+    
+          setNewMessage('');
+          fetchMessages(selectedConversation);
+        } catch (error) {
+          console.error('Error sending message:', error);
+        }
+      };
+    
+      return (
+        <div className="rounded-lg p-6 shadow-md bg-white h-[600px] flex gap-4">
+          {/* Conversations List */}
+          <div className="w-1/3 border-r pr-4 overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Conversations</h2>
+            {conversations.map((conversation) => {
+              // Get the seller's name by filtering out the logged-in buyer
+              const seller = conversation.participants.find(
+                (participant) => participant._id !== user._id
+              );
+    
+              return (
+                <div
+                  key={conversation._id}
+                  onClick={() => setSelectedConversation(conversation._id)}
+                  className={`p-3 cursor-pointer rounded-lg mb-2 ${
+                    selectedConversation === conversation._id
+                      ? 'bg-blue-50 border-blue-200'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="font-medium">{seller?.name || 'Unknown Seller'}</div>
+                  <div className="text-sm text-gray-500 truncate">
+                    {conversation.lastMessage || 'No messages yet'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+    
+          {/* Messages Area */}
+          <div className="flex-1 flex flex-col">
+            {selectedConversation ? (
+              <>
+                <div className="flex-1 overflow-y-auto mb-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message._id}
+                      className={`mb-4 ${
+                        message.senderId === user._id ? 'text-right' : 'text-left'
+                      }`}
+                    >
+                      <div
+                        className={`inline-block p-2 rounded-lg ${
+                          message.senderId === user._id
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200'
+                        }`}
+                      >
+                        {message.text}
+                        <div className="text-xs mt-1 opacity-70">
+                          {new Date(message.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <form onSubmit={handleSendMessage} className="mt-auto">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      className="flex-1 border rounded-lg p-2"
+                      placeholder="Type your message..."
+                    />
+                    <button
+                      type="submit"
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="text-gray-500 flex-1 flex items-center justify-center">
+                Select a conversation to start chatting
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-100 ">
-      <div className="w-full md:w-1/4 p-5 bg-gray-100">
+      <div className="w-full md:w-1/4 p-5 bg-gray-100">  
         <div className="bg-gray-200 p-5 rounded-lg">
-          <ul className="space-y-2">
+          {/* <ul className="space-y-2">
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "dashboard" ? "bg-white" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "profile" ? "bg-white" : ""}`} onClick={() => setActiveTab("profile")}>Manage My Account</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "alerts" ? "bg-white" : ""}`} onClick={() => setActiveTab("alerts")}>My Alerts</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "logout" ? "bg-white" : ""}`} onClick={handleLogout}>LogOut</li>
-          </ul>
+          </ul> */}
+        <ul className="space-y-2">
+          <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "dashboard" ? "bg-white" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</li>
+          <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "profile" ? "bg-white" : ""}`} onClick={() => setActiveTab("profile")}>Manage My Account</li>
+          <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "alerts" ? "bg-white" : ""}`} onClick={() => setActiveTab("alerts")}>My Alerts</li>
+          <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "chats" ? "bg-white" : ""}`} onClick={() => setActiveTab("chats")}>My Chats</li>
+          <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "logout" ? "bg-white" : ""}`} onClick={handleLogout}>LogOut</li>
+        </ul>
         </div>
         
         <div className="mt-4">
@@ -1045,10 +1262,11 @@ const BuyerDashboard = () => {
             Home / DashBoard
           </div>
         </div>
-        
+        {activeTab === "chats" && renderChatsContent()}
         {activeTab === "dashboard" && renderDashboardContent()}
         {activeTab === "profile" && renderAccountContent()}
         {activeTab === "alerts" && renderAlertsContent()}
+
       </div>
     </div>
   );

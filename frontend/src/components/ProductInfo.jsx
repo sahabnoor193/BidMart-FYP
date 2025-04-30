@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { Heart } from 'lucide-react';
 import axios from 'axios';
+import ChatIcon from './ChatIcon';
 
 const ProductInfo = ({
   title = 'Product Title',
@@ -9,10 +11,12 @@ const ProductInfo = ({
   latestBid = 0,
   totalBids = 0,
   productId,
+  sellerId,
 }) => {
   const [bidAmount, setBidAmount] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasPlacedBid, setHasPlacedBid] = useState(false);
 
   useEffect(() => {
     const checkFavoriteStatus = async () => {
@@ -41,18 +45,78 @@ const ProductInfo = ({
       }
     };
 
+    const checkBidStatus = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Check if user has already placed a bid
+        const response = await axios.get(
+          `http://localhost:5000/api/bids/product/${productId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        const userId = JSON.parse(localStorage.getItem('user'))._id;
+        const hasBid = response.data.some(bid => 
+          bid.bidderId._id === userId && 
+          (bid.status === 'pending' || bid.status === 'accepted')
+        );
+        
+        setHasPlacedBid(hasBid);
+      } catch (error) {
+        console.error('Error checking bid status:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if (productId) {
       checkFavoriteStatus();
+      checkBidStatus();
     }
   }, [productId]);
 
-  const handleBidSubmit = () => {
-    const numericBid = parseFloat(bidAmount);
-    if (isNaN(numericBid) || numericBid <= latestBid) {
-      alert('Please enter a valid bid amount higher than the latest bid');
-      return;
+  const handleBidSubmit = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please login to place a bid');
+        return;
+      }
+
+      const numericBid = parseFloat(bidAmount);
+      if (isNaN(numericBid) || numericBid <= latestBid) {
+        alert('Please enter a valid bid amount higher than the latest bid');
+        return;
+      }
+
+      const response = await axios.post(
+        'http://localhost:5000/api/bids',
+        {
+          productId,
+          amount: numericBid
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data) {
+        alert('Bid placed successfully!');
+        setBidAmount('');
+        // Refresh the page to show updated bid information
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error placing bid:', error);
+      alert(error.response?.data?.message || 'Failed to place bid. Please try again.');
     }
-    // Handle bid submission logic here
   };
 
   const toggleFavorite = async () => {
@@ -114,9 +178,10 @@ const ProductInfo = ({
               value={bidAmount}
               onChange={(e) => setBidAmount(e.target.value)}
               className="flex-1 px-2 py-2 focus:outline-none"
-              placeholder="Enter bid amount"
+              placeholder={hasPlacedBid ? "You have already placed a bid" : "Enter bid amount"}
               min={latestBid + 1}
               step="1"
+              disabled={hasPlacedBid}
             />
             <span className="px-3 text-gray-500 bg-gray-50">.00</span>
           </div>
@@ -139,17 +204,34 @@ const ProductInfo = ({
               }`} 
             />
           </button>
+                  {/* Add ChatIcon here */}
+        <ChatIcon sellerId={sellerId} />
+
           <button 
-            className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`flex-1 py-2 rounded-lg transition-colors duration-200 ${
+              hasPlacedBid 
+                ? 'bg-gray-400 text-white cursor-not-allowed' 
+                : 'bg-red-600 text-white hover:bg-red-700'
+            }`}
             onClick={handleBidSubmit}
-            disabled={!bidAmount || parseFloat(bidAmount) <= latestBid}
+            disabled={!bidAmount || parseFloat(bidAmount) <= latestBid || hasPlacedBid}
           >
-            Place Bid
+            {hasPlacedBid ? "Bid Placed" : "Place Bid"}
           </button>
         </div>
       </div>
     </div>
   );
+};
+
+ProductInfo.propTypes = {
+  title: PropTypes.string,
+  country: PropTypes.string,
+  startBid: PropTypes.number,
+  latestBid: PropTypes.number,
+  totalBids: PropTypes.number,
+  productId: PropTypes.string.isRequired,
+  sellerId: PropTypes.string.isRequired
 };
 
 export default ProductInfo;

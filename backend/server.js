@@ -21,6 +21,9 @@ const feedbackRoutes = require("./routes/feedbackRoutes");
 const bidRoutes = require("./routes/bid");
 const mongoose = require('mongoose');
 const configureSocket = require('./config/socket');
+const conversationRoutes = require("./routes/conversationRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -61,6 +64,9 @@ app.use("/api/alerts", alertRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/bids", bidRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/conversations", conversationRoutes);
+app.use("/api/messages", messageRoutes);
 
 // Create HTTP server
 const server = require('http').createServer(app);

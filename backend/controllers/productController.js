@@ -234,7 +234,7 @@ const getProductById = asyncHandler(async (req, res) => {
     console.log('[API] Fetching product with ID:', req.params.id);
 
     const product = await Product.findById(req.params.id)
-      .populate("user", "name email phone createdAt city")
+      .populate("user", "name email phone createdAt city _id")
       .lean();
 
     if (!product) {
@@ -272,6 +272,7 @@ const getProductById = asyncHandler(async (req, res) => {
     // Build response
     const response = {
       title: product.name,
+      sellerId: product.user._id, // Correctly assign the seller's user ID
       country: product.country,
       startBid: product.startingPrice,
       latestBid: product.currentPrice,

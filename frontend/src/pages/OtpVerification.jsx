@@ -43,12 +43,18 @@ const OtpVerification = () => {
     console.log("🔹 Sending verification request with: ", { email, otp, name, password, type }); // ✅ Debugging log
   
     try {
-      const endpoint = isSwitchVerification ? "switch-verify-otp" : "verify-otp";
-      const response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+      const endpoint = isSwitchVerification ? "user/switch-verify-otp" : "auth/verify-otp"; // Updated endpoint
+      const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp, name, password, type }),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text(); // Read the response as text
+        console.error("Error response:", errorText);
+        throw new Error("Failed to verify OTP. Please check the backend endpoint.");
+      }
   
       const data = await response.json();
       console.log("🔹 Response from backend: ", data); // ✅ Log backend response

@@ -20,6 +20,7 @@ const ProductPage = () => {
     const fetchProduct = async () => {
       try {
         const response = await axios.get(`http://localhost:5000/api/products/${id}`);
+        console.log('Product Data:', response.data); // Log the response
         setProductData(response.data);
         setLoading(false);
       } catch (err) {
@@ -94,6 +95,7 @@ const ProductPage = () => {
           latestBid={productData.latestBid}
           totalBids={productData.totalBids}
           productId={id}
+          sellerId={productData.sellerId}
         />
       </div>
 
