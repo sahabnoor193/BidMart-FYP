@@ -4,7 +4,7 @@ const slugify = require("slugify");
 const cloudinary = require("cloudinary").v2;
 const User = require("../models/User");
 const Alert = require('../models/alertModel');
-
+const Bid = require("../models/Bid");
 // @desc    Create a new product (or draft)
 // @route   POST /api/products
 // @access  Private
@@ -195,7 +195,7 @@ const getUserProducts = asyncHandler(async (req, res) => {
   res.status(200).json(products);
 });
 
-
+// Changes BY Muneeb
 const getActiveProducts = asyncHandler(async (req, res) => {
   try {
     const now = new Date();
@@ -209,8 +209,6 @@ const getActiveProducts = asyncHandler(async (req, res) => {
     
     const products = await Product.find({ 
       $and: [
-        { startDate: { $lte: new Date(utcNow) } },
-        { endDate: { $gt: new Date(utcNow) } },
         { isDraft: false },
         { status: 'active' }
       ]
@@ -226,57 +224,177 @@ const getActiveProducts = asyncHandler(async (req, res) => {
   }
 });
 
+// const getActiveProducts = asyncHandler(async (req, res) => {
+//   try {
+//     const now = new Date();
+//     const utcNow = Date.UTC(
+//       now.getUTCFullYear(),
+//       now.getUTCMonth(),
+//       now.getUTCDate()
+//     );
+    
+//     console.log('[API] Fetching active products at:', new Date(utcNow).toISOString());
+    
+//     const products = await Product.find({ 
+//       $and: [
+//         { startDate: { $lte: new Date(utcNow) } },
+//         { endDate: { $gt: new Date(utcNow) } },
+//         { isDraft: false },
+//         { status: 'active' }
+//       ]
+//     })
+//     .sort('-createdAt')
+//     .select('name startingPrice currentPrice status startDate endDate isDraft category city country images');
+
+//     console.log('[API] Found products:', products.length);
+//     res.json(products);
+//   } catch (error) {
+//     console.error('[API] Error fetching active products:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
 // @desc    Get single product details
 // @route   GET /api/products/:id
 // @access  Public
+// const getProductById = asyncHandler(async (req, res) => {
+//   try {
+//     console.log('[API] Fetching product with ID:', req.params.id);
+
+//     const product = await Product.findById(req.params.id)
+//       .populate("user", "name email phone createdAt city _id")
+//       .lean();
+
+//     if (!product) {
+//       console.error('[API] Product not found for ID:', req.params.id);
+//       res.status(404);
+//       throw new Error("Product not found");
+//     }
+
+//     console.log('[API] Found product:', product);
+
+//     // Calculate years active
+//     const seller = await User.findById(product.user._id);
+//     const yearsActive = new Date().getFullYear() - new Date(seller.createdAt).getFullYear();
+
+//     console.log('[API] Seller details:', seller);
+
+//     // Format dates to MM/DD/YY
+//     const formatDate = (date) => 
+//       new Date(date).toLocaleDateString("en-US", {
+//         year: "2-digit",
+//         month: "2-digit",
+//         day: "2-digit"
+//       });
+
+//     // Get seller's previous products (excluding current product)
+//     const previousProducts = await Product.find({
+//       user: product.user._id,
+//       _id: { $ne: product._id },
+//       isDraft: false
+//     })
+//     .sort('-createdAt')
+//     .limit(5)
+//     .select('name startingPrice currentPrice status startDate endDate images');
+
+//     // Build response
+//     const response = {
+//       title: product.name,
+//       sellerId: product.user._id, // Correctly assign the seller's user ID
+//       country: product.country,
+//       startBid: product.startingPrice,
+//       latestBid: product.currentPrice,
+//       totalBids: product.totalBids,
+//       images: {
+//         main: product.images[product.mainImageIndex] || product.images[0],
+//         thumbnails: product.images
+//       },
+//       details: {
+//         quantity: product.quantity,
+//         brand: product.brand,
+//         dateStart: formatDate(product.startDate),
+//         dateEnd: formatDate(product.endDate),
+//         description: product.description
+//       },
+//       profile: {
+//         name: product.user.name,
+//         years: yearsActive,
+//         time: formatDate(product.user.createdAt),
+//         bids: await Product.countDocuments({ user: product.user._id, isDraft: false }) // Total active products listed
+//       },
+//       contact: {
+//         name: product.user.name,
+//         email: product.user.email,
+//         phone: product.user.phone,
+//         city: product.user.city
+//       },
+//       previousBids: previousProducts.map(prod => ({
+//         item: prod.name,
+//         price: prod.currentPrice || prod.startingPrice,
+//         status: prod.status,
+//         startDate: formatDate(prod.startDate),
+//         endDate: formatDate(prod.endDate),
+//         image: prod.images[0]
+//       }))
+//     };
+
+//     console.log('[API] Response:', response);
+//     res.json(response);
+//   } catch (error) {
+//     console.error('[API] Error fetching product by ID:', error);
+//     res.status(500).json({ message: "Server Error" });
+//   }
+// });
+
+
+// Added By Muneeb
 const getProductById = asyncHandler(async (req, res) => {
   try {
-    console.log('[API] Fetching product with ID:', req.params.id);
-
     const product = await Product.findById(req.params.id)
-      .populate("user", "name email phone createdAt city _id")
+      .populate("user", "name email phone createdAt city")
       .lean();
 
     if (!product) {
-      console.error('[API] Product not found for ID:', req.params.id);
       res.status(404);
       throw new Error("Product not found");
     }
 
-    console.log('[API] Found product:', product);
-
-    // Calculate years active
     const seller = await User.findById(product.user._id);
     const yearsActive = new Date().getFullYear() - new Date(seller.createdAt).getFullYear();
 
-    console.log('[API] Seller details:', seller);
-
-    // Format dates to MM/DD/YY
-    const formatDate = (date) => 
+    const formatDate = (date) =>
       new Date(date).toLocaleDateString("en-US", {
         year: "2-digit",
         month: "2-digit",
         day: "2-digit"
       });
 
-    // Get seller's previous products (excluding current product)
+    // ✅ Get all bids and latest bid
+    const bids = await Bid.find({ productId: product._id })
+      .populate("bidderId", "name email")
+      .sort("-createdAt")
+      .lean();
+
+    const latestBidEntry = bids.length > 0 ? bids[0] : null;
+    const latestBidPrice = latestBidEntry?.amount || product.startingPrice;
+
+    // ✅ Seller's previous products (excluding current)
     const previousProducts = await Product.find({
       user: product.user._id,
       _id: { $ne: product._id },
       isDraft: false
     })
-    .sort('-createdAt')
-    .limit(5)
-    .select('name startingPrice currentPrice status startDate endDate images');
+      .sort('-createdAt')
+      .limit(5)
+      .select('name startingPrice currentPrice status startDate endDate images');
 
-    // Build response
     const response = {
       title: product.name,
-      sellerId: product.user._id, // Correctly assign the seller's user ID
       country: product.country,
+      bidIncrease: product.bidIncrease,
       startBid: product.startingPrice,
-      latestBid: product.currentPrice,
-      totalBids: product.totalBids,
+      latestBid: latestBidPrice, // ✅ This is now accurate based on actual bids
+      totalBids: bids.length,
       images: {
         main: product.images[product.mainImageIndex] || product.images[0],
         thumbnails: product.images
@@ -289,11 +407,13 @@ const getProductById = asyncHandler(async (req, res) => {
         description: product.description
       },
       profile: {
+        sellerId: product.user._id,
         name: product.user.name,
         years: yearsActive,
         time: formatDate(product.user.createdAt),
-        bids: await Product.countDocuments({ user: product.user._id, isDraft: false }) // Total active products listed
+        bids: await Product.countDocuments({ user: product.user._id, isDraft: false })
       },
+      
       contact: {
         name: product.user.name,
         email: product.user.email,
@@ -307,10 +427,18 @@ const getProductById = asyncHandler(async (req, res) => {
         startDate: formatDate(prod.startDate),
         endDate: formatDate(prod.endDate),
         image: prod.images[0]
+      })),
+      bids: bids.map(bid => ({
+        amount: bid.amount,
+        status: bid.status,
+        createdAt: formatDate(bid.createdAt),
+        bidder: {
+          name: bid.bidderId?.name || 'Unknown',
+          email: bid.bidderId?.email || 'N/A'
+        }
       }))
     };
 
-    console.log('[API] Response:', response);
     res.json(response);
   } catch (error) {
     console.error('[API] Error fetching product by ID:', error);

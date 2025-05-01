@@ -19,7 +19,7 @@ const ProductGallery = ({
             <img 
               src={thumb} 
               alt={`Product view ${index + 1}`} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               onError={(e) => {
                 e.currentTarget.src = 'https://via.placeholder.com/100';
               }}
@@ -31,7 +31,7 @@ const ProductGallery = ({
         <img 
           src={currentImage} 
           alt="Product main view" 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
           onError={(e) => {
             e.currentTarget.src = 'https://via.placeholder.com/400';
           }}

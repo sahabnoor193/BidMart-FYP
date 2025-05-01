@@ -145,7 +145,7 @@ exports.register = async (req, res) => {
     res.status(500).json({ error: "Server Error: " + error.message });
   }
 };
-
+// Changes By Muneeb, Added userid and userName in response
 exports.login = async (req, res) => {
   try {
     const { email, password, rememberMe } = req.body;
@@ -192,43 +192,103 @@ exports.login = async (req, res) => {
       { expiresIn: rememberMe ? '30d' : '1d' }, // 30 days if checked, 1 day if not
     );
     console.log("✅ User logged in:", email, "as", userType);
-    res.status(200).json({ message: "Login successful", token, type: userType });
+    res.status(200).json({ message: "Login successful", token, type: userType, id: user.id,name: user.name });
   } catch (error) {
     console.error("❌ Login Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
-
+// Added By Muneeb
 exports.googleRegister = async (req, res) => {
   try {
-    console.log(req.body)
-
     const { credential } = req.body;
-    const CLIENT_ID = '852097868952-cvmhh8njvar2siti0j89m11vsrf0vhpt.apps.googleusercontent.com'; // Replace with your actual client ID
+    const CLIENT_ID = '1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com';
     const client = new OAuth2Client(CLIENT_ID);
 
-    // Verify the ID token using Google Auth Library
     const ticket = await client.verifyIdToken({
       idToken: credential,
-      audience: CLIENT_ID, // Ensure the ID token is for the correct client
+      audience: CLIENT_ID,
     });
 
-    // Get the decoded payload from the ID token
     const payload = ticket.getPayload();
 
-    console.log(payload);
-    User.deleteMany({});
-    // Return the payload in the response
-    let user = await User.create({name:payload.name, email: payload.email, type: "BUYER", provider:"GOOGLE"});
+    // Check if user already exists
+    let existingUser = await User.findOne({ email: payload.email });
 
-    const token = jwt.sign({ user: user }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    return res.status(200).json({ token,user });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already registered" });
+    }
+
+    const user = await User.create({
+      name: payload.name,
+      email: payload.email,
+      type: "buyer",
+      provider: "google"
+    });
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    return res.status(200).json({
+      token,
+      userId: user._id,
+      user,
+    });
   } catch (error) {
     console.error("Registration Error:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
+// Added By Muneeb
+exports.googleLogins = async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ message: "No credential provided" });
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name } = payload;
+
+    if (!email) {
+      return res.status(400).json({ message: "Google email not found" });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ email, provider: "google" });
+
+    if (!user) {
+      // Optional: if you want to auto-create user if not exist
+      user = await User.create({
+        name,
+        email,
+        type: "buyer", // or ask frontend to send type if you want to support both
+        provider: "google",
+      });
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    return res.status(200).json({
+      id: user._id,
+      token,
+      name: user.name,
+      email: user.email,
+      type: user.type,
+    });
+
+  } catch (error) {
+    console.error("Google Login Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
 // Google Login
 exports.googleLogin = async (req, res) => {
   console.log("Google Login - Session Data:", req.session.tempUser); // Debugging
@@ -347,6 +407,8 @@ exports.facebookLogin = async (req, res) => {
 //   }
 // };
 
+
+// Add User Id in Response By Muneeb
 exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp, name, password, type } = req.body;
@@ -382,7 +444,9 @@ exports.verifyOTP = async (req, res) => {
     // ✅ Delete OTP entry for this specific email & type
     await Verification.deleteOne({ email, type });
 
-    res.status(200).json({ message: `Account verified successfully as ${type}! Please log in.` });
+    res.status(200).json({ message: `Account verified successfully as ${type}! Please log in.`,
+      userId: newUser._id,
+     });
   } catch (error) {
     console.error("❌ OTP Verification Error:", error);
     res.status(500).json({ error: error.message });

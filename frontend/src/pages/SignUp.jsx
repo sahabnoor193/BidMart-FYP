@@ -4,8 +4,11 @@ import { AiFillEye, AiFillEyeInvisible, AiOutlineQuestionCircle } from "react-ic
 import sign from "../assets/signup.jpeg";
 import { useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { toast } from "react-toastify";
 
 const Signup = ({ setIsAuthenticated }) => {
+  const BASEURL = "https://subhan-project-backend.onrender.com";
+  // const BASEURL = "http://localhost:5000";
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -22,7 +25,7 @@ const Signup = ({ setIsAuthenticated }) => {
       if (userType === "seller") {
         navigate("/seller-dashboard");
       } else {
-        navigate("/buyer-dashboard");
+        navigate("/");
       }
     }
   }, [navigate]);
@@ -40,7 +43,7 @@ const Signup = ({ setIsAuthenticated }) => {
     }
   
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      const response = await fetch(`${BASEURL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -51,7 +54,6 @@ const Signup = ({ setIsAuthenticated }) => {
       if (response.ok) {
         localStorage.setItem("email", formData.email);
         localStorage.setItem("name", formData.name);
-        localStorage.setItem("password", formData.password); // ✅ Store password temporarily
         localStorage.setItem("type", formData.type);
   
         navigate("/otp-verification");
@@ -64,35 +66,57 @@ const Signup = ({ setIsAuthenticated }) => {
     }
   };
 
+
   const googleLoginHandler = async (googleResponse) => {
+    // Show loading toast
+    const toastId = toast.loading("Registering...");
+  
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register-google", {
+      const response = await fetch(`${BASEURL}/api/auth/register-google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(googleResponse),
       });
-
+  
       const data = await response.json();
-
+      console.log(data, "Data");
+  
       if (response.ok) {
-        alert("Login successful!");
+        toast.update(toastId, {
+          render: "Register successful!",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+        });
+  
         localStorage.setItem("token", data.token);
-        localStorage.setItem("userEmail", data.email);
-        localStorage.setItem("userType", data.type);
-        localStorage.setItem("userName", data.name);
+        localStorage.setItem("id", data.userId);
+        localStorage.setItem("userEmail", data?.user?.email);
+        localStorage.setItem("userType", "Buyer");
+        localStorage.setItem("userName", data?.user?.name);
         setIsAuthenticated(true);
-
-        if (data.type === "seller") {
+  
+        if (data.user.type === "seller") {
           navigate("/seller-dashboard");
         } else {
-          navigate("/dashboard");
+          navigate("/buyer-dashboard");
         }
       } else {
-        alert(data.message || "Registration failed");
+        toast.update(toastId, {
+          render: data.message || "Registration failed",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("An error occurred during registration");
+      toast.update(toastId, {
+        render: "An error occurred during registration",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
     }
   };
 
@@ -214,7 +238,7 @@ const Signup = ({ setIsAuthenticated }) => {
                 </button>
               </a>
 
-              <GoogleOAuthProvider clientId="852097868952-cvmhh8njvar2siti0j89m11vsrf0vhpt.apps.googleusercontent.com">
+              <GoogleOAuthProvider clientId="1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com">
                 <GoogleLogin onSuccess={(response) => googleLoginHandler(response)}
                              onError={(error) => console.log(error)} />
               </GoogleOAuthProvider>

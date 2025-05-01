@@ -4,12 +4,17 @@ const User = require("../models/User");
 const Alert = require("../models/alertModel");
 const asyncHandler = require("express-async-handler");
 const { validationResult } = require('express-validator');
+const { createAlertAndEmit } = require("./alertController");
 
 // @desc    Create a new bid
 // @route   POST /api/bids
 // @access  Private (Buyer only)
+
+// Changes BY Muneeb
 exports.createBid = asyncHandler(async (req, res) => {
   const userId = req.user._id;
+  const io = req.app.get('io');
+
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -19,23 +24,19 @@ exports.createBid = asyncHandler(async (req, res) => {
     const { productId, amount } = req.body;
     const buyerId = req.user._id;
 
-    // Check if user is a buyer
     if (req.user.type !== "buyer") {
       return res.status(403).json({ message: "Only buyers can place bids" });
     }
 
-    // Find the product
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Check if product is active
     if (product.status !== "active") {
       return res.status(400).json({ message: "Cannot bid on inactive product" });
     }
 
-    // Check if buyer has already placed a bid
     const existingBid = await Bid.findOne({
       productId,
       bidderId: buyerId,
@@ -43,19 +44,13 @@ exports.createBid = asyncHandler(async (req, res) => {
     });
 
     if (existingBid) {
-      return res.status(400).json({ 
-        message: "You have already placed a bid on this product" 
-      });
+      return res.status(400).json({ message: "You have already placed a bid on this product" });
     }
 
-    // Check if bid amount is valid
     if (amount <= product.currentPrice || amount <= product.startingPrice) {
-      return res.status(400).json({ 
-        message: "Bid amount must be higher than current price" 
-      });
+      return res.status(400).json({ message: "Bid amount must be higher than current price" });
     }
 
-    // Create the bid
     const bid = await Bid.create({
       productId,
       bidderId: buyerId,
@@ -63,36 +58,33 @@ exports.createBid = asyncHandler(async (req, res) => {
       status: "pending"
     });
 
-    // Update product's current price
     product.currentPrice = amount;
     product.highestBidder = buyerId;
     await product.save();
 
-    // Update buyer's bid count
     await User.findByIdAndUpdate(buyerId, { $inc: { requestedBids: 1 } });
 
-    await Alert.create({
-      user: product.user, // Seller's ID
+    const buyer = await User.findById(buyerId).select('name email');
+
+    // 🔔 Alerts using central helper
+    await createAlertAndEmit({
+      user: product.user,
       userType: "seller",
       product: product._id,
       productName: product.name,
-      action: "new-bid",
-    });
+      action: "new-bid"
+    }, io);
 
-    await Alert.create({
+    await createAlertAndEmit({
       user: userId,
-      userType: 'buyer',
+      userType: "buyer",
       product: product._id,
       productName: product.name,
-      action: "bid-placed",
-    });
+      action: "bid-placed"
+    }, io);
 
-    // Get buyer details for real-time update
-    const buyer = await User.findById(buyerId).select('name email');
-
-    // Emit real-time bid update
-    const io = req.app.get('io');
-    io.emit('newBid', {
+    // 🔄 Product page room update
+    io.to(`product_${productId}`).emit("newBid", {
       productId,
       bid: {
         amount,
@@ -104,7 +96,27 @@ exports.createBid = asyncHandler(async (req, res) => {
       }
     });
 
-    res.status(201).json(bid);
+    // Optional: Direct bidNotification for seller
+    io.to(`user_${product.user.toString()}`).emit("bidNotification", {
+      productId,
+      productName: product.name,
+      amount: bid.amount,
+      bidder: {
+        name: buyer.name,
+        email: buyer.email
+      },
+      timestamp: bid.createdAt
+    });
+
+    res.status(201).json({
+      message: "Bid placed successfully",
+      latestBid: {
+        amount: bid.amount,
+        bidder: buyer.name,
+        timestamp: bid.createdAt
+      }
+    });
+
   } catch (error) {
     console.error("Error creating bid:", error);
     res.status(500).json({ message: "Server error" });

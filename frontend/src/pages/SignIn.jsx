@@ -1,11 +1,18 @@
+//import React, { useState } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
+
 import signinImage from "../assets/signup.jpeg";
-import {jwtDecode} from "jwt-decode"; // ✅ Correct import
+import { jwtDecode } from "jwt-decode"; // ✅ Correct// ✅ Install with: npm install jwt-decode
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { toast } from "react-toastify";
+//import {jwtDecode} from "jwt-decode"; // ✅ Correct import
 
 const SignIn = ({ setIsAuthenticated }) => {
+  const BASEURL = "https://subhan-project-backend.onrender.com";
+  // const BASEURL = "http://localhost:5000";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,50 +28,117 @@ const SignIn = ({ setIsAuthenticated }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-
+    const toastId = toast.loading("Logging in...");
+  
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(`${BASEURL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, rememberMe }),
       });
-
+  
       const data = await response.json();
       setLoading(false);
-
+      console.log(data, "Data");
+  
       if (response.ok) {
-        alert("Login successful!");
-
+        toast.update(toastId, {
+          render: "Login successful!",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+        });
+  
         localStorage.setItem("token", data.token);
+        localStorage.setItem("id", data.id);
         localStorage.setItem("userEmail", email);
         localStorage.setItem("userType", data.type);
         localStorage.setItem("userName", data.name);
         setIsAuthenticated(true);
-
-        // Decode the token to get user type
+  
         const decodedToken = jwtDecode(data.token);
-        const userType = decodedToken.type || "buyer"; // Default to buyer if type is missing
-
+        const userType = decodedToken.type || "buyer";
+  
         localStorage.setItem("userType", userType);
         setIsAuthenticated(true);
-
+  
         // Redirect based on user type
         if (userType === "seller") {
-          navigate("/seller-dashboard", { replace: true }); // Use replace: true
+          navigate("/seller-dashboard", { replace: true });
         } else {
-          navigate("/buyer-dashboard", { replace: true }); // Use replace: true
+          navigate("/buyer-dashboard", { replace: true });
         }
       } else {
-        setError(data.message || "Invalid email or password.");
+        toast.update(toastId, {
+          render: data.message || "Invalid email or password.",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
       }
     } catch (err) {
       console.error("❌ Error logging in:", err);
-      setError("An error occurred while logging in.");
+      toast.update(toastId, {
+        render: "An error occurred while logging in.",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
       setLoading(false);
     }
   };
-
+  const googleLoginHandler = async (googleResponse) => {
+    const toastId = toast.loading("Logging in with Google...");
+  
+    try {
+      const response = await fetch(`${BASEURL}/api/auth/login-google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(googleResponse),
+      });
+  
+      const data = await response.json();
+      console.log(data, "Data");
+  
+      if (response.ok) {
+        toast.update(toastId, {
+          render: "Login successful!",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+        });
+  
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userEmail", data.email);
+        localStorage.setItem("userType", data.type);
+        localStorage.setItem("id", data.id);
+        localStorage.setItem("userName", data.name);
+        setIsAuthenticated(true);
+  
+        if (data.type === "seller") {
+          navigate("/seller-dashboard");
+        } else {
+          navigate("/");
+        }
+      } else {
+        toast.update(toastId, {
+          render: data.message || "Login failed",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.update(toastId, {
+        render: "An error occurred during login",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+  
   return (
     <div className="min-h-screen bg-white flex flex-col md:flex-row">
       {/* Left Section (Image) */}
@@ -109,7 +183,7 @@ const SignIn = ({ setIsAuthenticated }) => {
                   required
                 />
                 <span className="absolute inset-y-0 right-8 flex items-center text-gray-500 cursor-pointer"
-                      onClick={togglePasswordVisibility}>
+                  onClick={togglePasswordVisibility}>
                   {showPassword ? <AiFillEyeInvisible size={20} /> : <AiFillEye size={20} />}
                 </span>
               </div>
@@ -152,11 +226,15 @@ const SignIn = ({ setIsAuthenticated }) => {
                 <FaFacebook size={20} className="mr-2" /> Facebook
               </button>
             </a>
-            <a href="http://localhost:5000/api/auth/google">
+            {/* <a href="http://localhost:5000/api/auth/google">
               <button className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300">
                 <FaGoogle size={20} className="mr-2" /> Google
               </button>
-            </a>
+            </a> */}
+            <GoogleOAuthProvider clientId="1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com">
+                <GoogleLogin onSuccess={(response) => googleLoginHandler(response)}
+                             onError={(error) => console.log(error)} />
+              </GoogleOAuthProvider>
           </div>
 
           <p className="text-center text-sm text-gray-500 mt-4"> Don't have an account?{" "}

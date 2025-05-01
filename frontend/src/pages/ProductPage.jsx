@@ -9,28 +9,72 @@ import Details from '../components/Details';
 import BidProfile from '../components/BidProfile';
 import ContactInfo from '../components/ContactInfo';
 import PreviousBids from '../components/PreviousBids';
-
+import socket from '../socket';
+import { toast } from 'react-toastify';
 const ProductPage = () => {
+  // const BASEURL = "https://subhan-project-backend.onrender.com";
+  const BASEURL = "http://localhost:5000";
   const { id } = useParams();
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+  
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/products/${id}`);
-        console.log('Product Data:', response.data); // Log the response
-        setProductData(response.data);
-        setLoading(false);
+        const response = await axios.get(`${BASEURL}/api/products/${id}`);
+        if (isMounted) {
+          setProductData(response.data);
+          setLoading(false);
+        }
       } catch (err) {
-        setError(err.message);
-        setLoading(false);
+        if (isMounted) {
+          setError(err.message);
+          setLoading(false);
+        }
       }
     };
-
+  
     fetchProduct();
+  
+    // Join the product room
+    socket.emit('joinProduct', id);
+    console.log(`Joined product room: product_${id}`);
+  
+    const handleNewBid = (data) => {
+      if (data.productId === id) {
+        console.log('Received new bid via socket:', data);
+  
+        toast.info(`New bid placed: Rs: ${data.bid.amount.toFixed(2)} by ${data.bid.bidder.name}`);
+  
+        setProductData((prev) => ({
+          ...prev,
+          latestBid: data.bid.amount,
+          totalBids: (prev?.totalBids || 0) + 1,
+          bids: [
+            ...(prev?.bids || []),
+            {
+              amount: data.bid.amount,
+              bidder: data.bid.bidder,
+              createdAt: data.bid.timestamp,
+              status: 'pending'
+            }
+          ],
+        }));
+      }
+    };
+  
+    socket.on('newBid', handleNewBid);
+  
+    return () => {
+      isMounted = false;
+      socket.emit('leaveProduct', id);
+      socket.off('newBid', handleNewBid);
+    };
   }, [id]);
+  
 
   if (loading) {
     return (
@@ -75,7 +119,7 @@ const ProductPage = () => {
     {
       id: 'previous',
       label: 'Previous Bids',
-      content: <PreviousBids bids={productData.previousBids} />,
+      content: <PreviousBids bids={productData.bids} />,
     },
   ];
 
@@ -93,9 +137,10 @@ const ProductPage = () => {
           country={productData.country}
           startBid={productData.startBid}
           latestBid={productData.latestBid}
-          totalBids={productData.totalBids}
+          totalBids={productData?.bids?.length}
           productId={id}
-          sellerId={productData.sellerId}
+          bidIncrease={productData.bidIncrease}
+          sellerId={productData.profile.sellerId}
         />
       </div>
 

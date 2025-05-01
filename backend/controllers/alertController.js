@@ -104,7 +104,21 @@ const getAlerts = asyncHandler(async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+const createAlertAndEmit = async ({ user, userType, product, productName, action }, io) => {
+  try {
+    const alert = await Alert.create({
+      user,
+      userType,
+      product,
+      productName,
+      action
+    });
 
+    io.to(`user_${user.toString()}`).emit('newAlert', alert);
+  } catch (error) {
+    console.error('Error creating/emitting alert:', error);
+  }
+};
 const markAlertAsRead = asyncHandler(async (req, res) => {
   try {
     const alert = await Alert.findOneAndUpdate(
@@ -155,5 +169,6 @@ module.exports = {
   getAlerts,
   markAlertAsRead,
   deleteAlert,
-  createAlert
+  createAlert,
+  createAlertAndEmit
 };

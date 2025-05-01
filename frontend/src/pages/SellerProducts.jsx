@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -92,6 +92,9 @@ const SellerProducts = () => {
                 </td>
                 <td className="py-2 px-4 border">
                   <div className="flex space-x-2">
+                  <Link className="text-green-600 hover:text-green-800" to={`/dashboard/products/${product._id}`}>
+                      View                     
+                    </Link>
                     <button 
                       onClick={() => handleEditProduct(product._id)}
                       className="text-blue-600 hover:text-blue-800"

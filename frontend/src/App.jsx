@@ -21,6 +21,9 @@ import ContactForm from "./pages/ContactForm";
 import FeedbackForm from "./pages/FeedbackForm";
 import AboutUs from "./pages/AboutUs";
 import FAQPage from "./pages/FAQPage";
+import  socket  from './socket';
+import GlobalAlertListener from './components/AlertListener';
+import DashboardProduct from './pages/DashboardProduct';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -58,7 +61,7 @@ function App() {
   return (
     <Router>
       <div className="flex flex-col min-h-screen">
-        <Navbar />
+        <Navbar isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}/>
         <main className="flex-grow mt-16"> {/* Add margin-top to main content */}
           <Routes>
             <Route path="/" element={<Home />} />
@@ -73,6 +76,7 @@ function App() {
             <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/signin"} />} />
             <Route path='/add-product' element={<AddProduct/>} />
             <Route path="/dashboard/products" element={<SellerProducts />} />
+            <Route path="/dashboard/products/:id" element={<DashboardProduct />} />
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/dashboard/products/edit/:productId" element={<EditProduct />} />
             <Route path="/contact" element={<ContactForm />} />
@@ -82,6 +86,7 @@ function App() {
           </Routes>
         </main>
         <Footer />
+        <GlobalAlertListener/>
         <ToastContainer />
       </div>
     </Router>

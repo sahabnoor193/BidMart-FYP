@@ -1,6 +1,6 @@
 const express = require("express");
 const passport = require("passport");
-const { register, login, googleLogin, facebookLogin, verifyOTP, resendOTP, logout, loginStatus, googleRegister, checkToken } = require("../controllers/authController");
+const { register, login, googleLogin, facebookLogin, verifyOTP, resendOTP, logout, loginStatus, googleRegister, checkToken, googleLogins } = require("../controllers/authController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -10,7 +10,7 @@ router.post("/register", register);
 router.post("/login", login);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
-
+router.post("/login-google", googleLogins);
 // Protected routes
 router.get("/check-token", protect, checkToken);
 router.post("/logout", protect, logout);

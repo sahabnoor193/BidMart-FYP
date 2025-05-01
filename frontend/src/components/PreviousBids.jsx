@@ -8,9 +8,9 @@ const PreviousBids = ({ bids = [] }) => {
           key={index} 
           className="flex justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
         >
-          <span className="text-gray-800">{bid.item}</span>
+          <span className="text-gray-800">{bid.bidder.name}</span>
           <span className="font-medium text-green-600">
-            ${typeof bid.price === 'number' ? bid.price.toFixed(2) : '0.00'}
+            Rs:{typeof bid.amount === 'number' ? bid.amount.toFixed(2) : '0.00'}
           </span>
         </div>
       ))}
