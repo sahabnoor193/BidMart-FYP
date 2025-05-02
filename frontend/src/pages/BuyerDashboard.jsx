@@ -1045,8 +1045,9 @@ const BuyerDashboard = () => {
       try {
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user')); // Retrieve the user object here
-
-        if (!user || !user._id) {
+        console.log('User stored in localStorage:', JSON.parse(localStorage.getItem('user')));
+        
+        if (!user || !user.id) {
           console.error('User not found in localStorage');
           return;
         }

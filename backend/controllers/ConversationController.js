@@ -1,18 +1,41 @@
 const Conversation = require("../models/Conversation");
 const mongoose = require("mongoose");
 
-exports.getConversations = async (req, res) => {
+// exports.getConversations = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const conversations = await Conversation.find({
+//       participants: userId,
+//     })
+//       .sort({ updatedAt: -1 })
+//       .populate("participants", "name email"); // Populate participants with name and email
+
+//     res.json(conversations);
+//   } catch (err) {
+//     console.error("Error fetching conversations:", err);
+//     res.status(500).json({ message: "Failed to fetch conversations" });
+//   }
+// };
+
+// In ConversationController.js
+exports.getUserConversations = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.params.userId;
+    
+    // Validate userId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
     const conversations = await Conversation.find({
-      participants: userId,
+      participants: userId
     })
-      .sort({ updatedAt: -1 })
-      .populate("participants", "name email"); // Populate participants with name and email
+    .sort({ updatedAt: -1 })
+    .populate("participants", "name email");
 
     res.json(conversations);
   } catch (err) {
-    console.error("Error fetching conversations:", err);
+    console.error("Error fetching user conversations:", err);
     res.status(500).json({ message: "Failed to fetch conversations" });
   }
 };

@@ -3,6 +3,10 @@ import { Heart } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Plus, Minus } from "lucide-react";
+import ChatIcon from './ChatIcon';
+import PropTypes from 'prop-types';
+
+
 const ProductInfo = ({
   title = 'Product Title',
   country = 'Country',
@@ -230,6 +234,8 @@ const ProductInfo = ({
               }`} 
             />
           </button>
+          {/* Add ChatIcon here */}
+        <ChatIcon sellerId={sellerId} />
           <button 
             className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleBidSubmit}
@@ -241,6 +247,16 @@ const ProductInfo = ({
       </div>
     </div>
   );
+};
+
+ProductInfo.propTypes = {
+  title: PropTypes.string,
+  country: PropTypes.string,
+  startBid: PropTypes.number,
+  latestBid: PropTypes.number,
+  totalBids: PropTypes.number,
+  productId: PropTypes.string.isRequired,
+  sellerId: PropTypes.string.isRequired
 };
 
 export default ProductInfo;

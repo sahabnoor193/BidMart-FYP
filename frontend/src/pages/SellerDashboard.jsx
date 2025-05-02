@@ -8,6 +8,10 @@ import { FaList, FaHistory, FaStar, FaExchangeAlt, FaTimes, FaPlus, FaEdit, FaTr
 const SellerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [userType, setUserType] = useState('seller'); // Add state for tracking user type
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
   
   const [sellerData, setSellerData] = useState({
     activeBids: 0,
@@ -59,6 +63,8 @@ const SellerDashboard = () => {
     if (storedUserType) {
       setUserType(storedUserType);
     }
+    const user = JSON.parse(localStorage.getItem('user'));
+    console.log('User stored in localStorage:', user);
 
     const fetchUserData = async () => {
       console.log('[API Call] Starting data fetching process');
@@ -683,6 +689,153 @@ const SellerDashboard = () => {
     );
   };
 
+  // Replace the existing useEffect for fetching conversations with:
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user')); // Get user from localStorage
+        
+        if (!user || !user.id) {
+          console.error('User not found in local storage');
+          return;
+        }
+
+        const response = await axios.get(
+          `http://localhost:5000/api/conversations/${user._id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setConversations(response.data);
+      } catch (error) {
+        console.error('Error fetching conversations:', error);
+      }
+    };
+
+    if (activeTab === 'chats') {
+      fetchConversations();
+    }
+  }, [activeTab]); // Add activeTab to dependency array
+  
+  const renderChatsContent = () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    console.log('User from localStorage:', JSON.parse(localStorage.getItem('user')));
+
+    const fetchMessages = async (conversationId) => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(
+          `http://localhost:5000/api/messages/${conversationId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setMessages(response.data);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+  
+    const handleSendMessage = async (e) => {
+      e.preventDefault();
+      if (!newMessage.trim()) return;
+  
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post('http://localhost:5000/api/messages', {
+          conversationId: selectedConversation,
+          senderId: user._id,
+          text: newMessage
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+  
+        setNewMessage('');
+        fetchMessages(selectedConversation);
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+    };
+  
+    return (
+      <div className="rounded-lg p-6 shadow-md bg-white h-[600px] flex gap-4">
+        {/* Conversations List */}
+        <div className="w-1/3 border-r pr-4 overflow-y-auto">
+          <h2 className="text-xl font-bold mb-4">Conversations</h2>
+          {conversations.map(conversation => (
+            <div
+              key={conversation._id}
+              onClick={() => {
+                setSelectedConversation(conversation._id);
+                fetchMessages(conversation._id);
+              }}
+              className={`p-3 cursor-pointer rounded-lg mb-2 ${
+                selectedConversation === conversation._id 
+                  ? 'bg-blue-50 border-blue-200' 
+                  : 'hover:bg-gray-50'
+              }`}
+            >
+              <div className="font-medium">
+                {conversation.participants
+                  .filter(p => p._id !== user._id)
+                  .map(p => p.name)
+                  .join(', ')}
+              </div>
+              <div className="text-sm text-gray-500 truncate">
+                {conversation.lastMessage}
+              </div>
+            </div>
+          ))}
+        </div>
+  
+        {/* Messages Area */}
+        <div className="flex-1 flex flex-col">
+          {selectedConversation ? (
+            <>
+              <div className="flex-1 overflow-y-auto mb-4">
+                {messages.map(message => (
+                  <div
+                    key={message._id}
+                    className={`mb-4 ${message.senderId === user._id ? 'text-right' : 'text-left'}`}
+                  >
+                    <div className={`inline-block p-2 rounded-lg ${
+                      message.senderId === user._id 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-gray-200'
+                    }`}>
+                      {message.text}
+                      <div className="text-xs mt-1 opacity-70">
+                        {new Date(message.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <form onSubmit={handleSendMessage} className="mt-auto">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    className="flex-1 border rounded-lg p-2"
+                    placeholder="Type your message..."
+                  />
+                  <button
+                    type="submit"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                  >
+                    Send
+                  </button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <div className="text-gray-500 flex-1 flex items-center justify-center">
+              Select a conversation to start chatting
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
       {/* Sidebar */}
@@ -692,6 +845,7 @@ const SellerDashboard = () => {
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "dashboard" ? "bg-white" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "profile" ? "bg-white" : ""}`} onClick={() => setActiveTab("profile")}>Manage My Account</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "alerts" ? "bg-white" : ""}`} onClick={() => setActiveTab("alerts")}>My Alerts</li>
+            <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "chats" ? "bg-white" : ""}`} onClick={() => setActiveTab("chats")}>My Chats</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "logout" ? "bg-white" : ""}`} onClick={handleLogout}>LogOut</li>
           </ul>
         </div>
@@ -733,6 +887,7 @@ const SellerDashboard = () => {
         {activeTab === "dashboard" && renderDashboardContent()}
         {activeTab === "profile" && renderAccountContent()}
         {activeTab === "alerts" && renderAlertsContent()}
+        {activeTab === "chats" && renderChatsContent()}
       </div>
     </div>
   );

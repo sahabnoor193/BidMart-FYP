@@ -1,22 +1,23 @@
 //import React, { useState } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaFacebook, FaGoogle } from "react-icons/fa";
+import { FaFacebook } from "react-icons/fa";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 
 import signinImage from "../assets/signup.jpeg";
 import { jwtDecode } from "jwt-decode"; // ✅ Correct// ✅ Install with: npm install jwt-decode
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
+import PropTypes from "prop-types";
 //import {jwtDecode} from "jwt-decode"; // ✅ Correct import
 
 const SignIn = ({ setIsAuthenticated }) => {
-  const BASEURL = "https://subhan-project-backend.onrender.com";
-  // const BASEURL = "http://localhost:5000";
+  // const BASEURL = "https://subhan-project-backend.onrender.com";
+  const BASEURL = "http://localhost:5000";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
@@ -49,21 +50,24 @@ const SignIn = ({ setIsAuthenticated }) => {
           autoClose: 3000,
         });
   
+        // localStorage.setItem("token", data.token);
+        // localStorage.setItem("id", data.id);
+        // localStorage.setItem("userEmail", email);
+        // localStorage.setItem("userType", data.type);
+        // localStorage.setItem("userName", data.name);
+        // setIsAuthenticated(true);
+
+        const userData = { id: data.id,  _id: data.id, email, type: data.type, name: data.name };
+        localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("token", data.token);
-        localStorage.setItem("id", data.id);
-        localStorage.setItem("userEmail", email);
-        localStorage.setItem("userType", data.type);
-        localStorage.setItem("userName", data.name);
-        setIsAuthenticated(true);
   
-        const decodedToken = jwtDecode(data.token);
-        const userType = decodedToken.type || "buyer";
+        // const decodedToken = jwtDecode(data.token);
+        // const userType = decodedToken.type || "buyer";
   
-        localStorage.setItem("userType", userType);
         setIsAuthenticated(true);
   
         // Redirect based on user type
-        if (userType === "seller") {
+        if (data.type === "seller") {
           navigate("/seller-dashboard", { replace: true });
         } else {
           navigate("/buyer-dashboard", { replace: true });
@@ -237,13 +241,16 @@ const SignIn = ({ setIsAuthenticated }) => {
               </GoogleOAuthProvider>
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-4"> Don't have an account?{" "}
+          <p className="text-center text-sm text-gray-500 mt-4"> Dont have an account?{" "}
             <a href="/signup" className="text-blue-500 hover:underline">Sign Up</a>
           </p>
         </div>
       </div>
     </div>
   );
+};
+SignIn.propTypes = {
+  setIsAuthenticated: PropTypes.func.isRequired,
 };
 
 export default SignIn;

@@ -7,8 +7,8 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
 
 const Signup = ({ setIsAuthenticated }) => {
-  const BASEURL = "https://subhan-project-backend.onrender.com";
-  // const BASEURL = "http://localhost:5000";
+  // const BASEURL = "https://subhan-project-backend.onrender.com";
+  const BASEURL = "http://localhost:5000";
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
