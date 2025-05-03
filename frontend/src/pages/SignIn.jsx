@@ -60,6 +60,8 @@ const SignIn = ({ setIsAuthenticated }) => {
         const userData = { id: data.id,  _id: data.id, email, type: data.type, name: data.name };
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("token", data.token);
+        localStorage.setItem("userName", data.name); // Add this line
+        localStorage.setItem("userType", data.type);
   
         // const decodedToken = jwtDecode(data.token);
         // const userType = decodedToken.type || "buyer";

@@ -207,6 +207,7 @@ const SellerDashboard = () => {
         console.log('[Switch Account] Switching to existing account');
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userType', response.data.userType);
+        localStorage.setItem("userName", response.data.user.name); // Add this line
 
       // Replace the entire user object in localStorage
       localStorage.setItem('user', JSON.stringify(response.data.user));
