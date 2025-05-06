@@ -75,6 +75,7 @@ function App() {
             <Route path="/signup" element={<Signup setIsAuthenticated={setIsAuthenticated} />} />
             <Route path="/signin" element={<Signin setIsAuthenticated={setIsAuthenticated} />} />
             <Route path="/favouritebids" element={<FavouriteBids />} />
+
             
             {/* <Route path="/product" element={<ProductPage />} /> */}
             <Route path="/otp-verification" element={<OtpVerification />} />
