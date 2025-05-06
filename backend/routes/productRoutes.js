@@ -15,7 +15,10 @@ router.get('/user/:userId', protect, productController.getUserProducts);
 router.get('/drafts', protect, productController.getDraftProducts);
 router.delete('/:id', protect, productController.deleteProduct);
 router.put('/:id', protect, upload.array('images', 5), handleMulterError, productController.updateProduct);
-
+router.get("/getAllProducts", productController.getAllProducts);
+router.get("/getProductById/:id", productController.getProductById);
+router.put("/updateProductStatus/:id", productController.updateProductStatus);
+router.delete("/deleteProduct/:id", productController.deleteProduct);
 // Public route (keep this last to avoid conflict)
 router.get('/:id', productController.getProductById);
 

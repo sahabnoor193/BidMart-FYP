@@ -4,7 +4,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Check, X } from 'lucide-react';
 
-const SellerProducts = () => {
+const SellerBids = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [draftProducts, setDraftProducts] = useState([]);
@@ -29,16 +29,13 @@ const SellerProducts = () => {
           axios.get('http://localhost:5000/api/seller/products', {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get('http://localhost:5000/api/products/drafts', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
         ]);
 
         setProducts(activeResponse.data);
         setDraftProducts(draftResponse.data);
       } catch (error) {
         console.error('Error fetching products:', error);
-        toast.error('Failed to load products');
+        // toast.error('Failed to load products');
       } finally {
         setLoading(false);
       }
@@ -142,27 +139,9 @@ const handleAcceptBid = async (bidId,productId,bidderEmail,bidderName) => {
                 </td>
                 <td className="py-2 px-4 border">
                   <div className="flex space-x-2">
-                  {/* <Link className="text-green-600 hover:text-green-800" to={`/dashboard/products/${product._id}`}>
+                  <Link className="text-green-600 hover:text-green-800" to={`/dashboard/products/${product._id}`}>
                       View                     
-                    </Link> */}
-                    <button 
-                      onClick={() => handleEditProduct(product._id)}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(product._id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      Delete
-                    </button>
-                    {/* <button 
-                      onClick={() => handleFetchBids(product._id)}
-                      className="text-green-600 hover:text-green-800"
-                    >
-                      See Bid
-                    </button> */}
+                    </Link>
                   </div>
                 </td>
               </tr>
@@ -255,16 +234,60 @@ const handleAcceptBid = async (bidId,productId,bidderEmail,bidderName) => {
           <ol className="flex items-center space-x-2">
             <li><a href="/" className="hover:text-red-600 transition-colors">Home</a></li>
             <li>/</li>
-            <li><a href="/dashboard" className="hover:text-red-600 transition-colors">Dashboard</a></li>
+            <li><a href="/seller-dashboard" className="hover:text-red-600 transition-colors">Dashboard</a></li>
             <li>/</li>
-            <li className="font-medium text-gray-700">Products</li>
+            <li className="font-medium text-gray-700">Active Bids</li>
           </ol>
         </nav>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {products.length > 0 && products?.map((item) => (
+    <Link
+    to={`/dashboard/products/${item._id}`}
+      key={item._id}
+      className="flex flex-col md:flex-row bg-white shadow-lg rounded-2xl overflow-hidden"
+    >
+      {/* Image */}
+      <div className="md:w-1/3 w-full h-64 md:h-[200px]">
+        <img
+          src={item.images?.[0] || 'https://via.placeholder.com/300'}
+          alt={item.name}
+          className="object-contain h-full w-full"
+        />
+      </div>
+
+      {/* Info */}
+      <div className="md:w-2/3 p-6 flex flex-col justify-between">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">{item.name}</h2>
+          <p className="text-gray-600 mb-1">
+            Status: <span className="capitalize text-yellow-600">{item.status}</span>
+          </p>
+          <p className="text-gray-600 mb-1">
+            Start Date: <span className="text-black">{new Date(item.startDate).toDateString()}</span>
+          </p>
+          <p className="text-gray-600 mb-1">
+            End Date: <span className="text-black">{new Date(item.endDate).toDateString()}</span>
+          </p>
+          <p className="text-gray-800 text-lg mt-2">Starting Price: Rs:{item.startingPrice.toLocaleString()}</p>
+          <button className='mt-3 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded'>See Bids</button>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {item.isDraft && (
+            <span className="bg-red-100 text-red-600 text-sm px-3 py-1 rounded-full">Draft</span>
+          )}
+          <span className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">
+            ID: {item._id}
+          </span>
+        </div>
+      </div>
+    </Link>
+  ))}
+</div>
 
       {/* Products Table */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
+        {/* <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-red-600">Your Products</h1>
           <div className="flex space-x-4">
             <button
@@ -284,16 +307,16 @@ const handleAcceptBid = async (bidId,productId,bidderEmail,bidderName) => {
               Draft Products
             </button>
           </div>
-        </div>
+        </div> */}
         
         {loading ? (
           <div className="text-center py-4">Loading products...</div>
         ) : (
-          activeTab === 'active' ? renderProductsTable(products) : renderProductsTable(draftProducts)
+          activeTab === 'active' ? "" : renderProductsTable(draftProducts)
         )}
       </div>
     </div>
   );
 };
 
-export default SellerProducts;
+export default SellerBids;

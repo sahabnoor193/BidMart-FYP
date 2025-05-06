@@ -5,6 +5,7 @@ const cloudinary = require("cloudinary").v2;
 const User = require("../models/User");
 const Alert = require('../models/alertModel');
 const Bid = require("../models/Bid");
+const productModel = require("../models/productModel");
 // @desc    Create a new product (or draft)
 // @route   POST /api/products
 // @access  Private
@@ -223,6 +224,49 @@ const getActiveProducts = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+
+const getAllProducts = async (req, res) => {
+  try {
+    const products = await productModel.find().populate("user", "name email");
+    res.status(200).json(products);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch products", error: err });
+  }
+};
+
+// Get a single product by ID
+const getProductDetailById = async (req, res) => {
+  try {
+    const product = await productModel.findById(req.params.id).populate("user", "name email");
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.status(200).json(product);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch product", error: err });
+  }
+};
+
+// Update product status
+const updateProductStatus = async (req, res) => {
+  const { status } = req.body;
+  if (!["active", "ended", "draft"].includes(status)) {
+    return res.status(400).json({ message: "Invalid status value" });
+  }
+
+  try {
+    const product = await productModel.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.status(200).json({ message: "Status updated", product });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update status", error: err });
+  }
+};
+
+// Delete a product
 
 // const getActiveProducts = asyncHandler(async (req, res) => {
 //   try {
@@ -736,5 +780,8 @@ module.exports = {
   deleteProduct,
   updateProduct,
   getSimilarProducts,
-  getDraftProducts
+  getDraftProducts,
+  getAllProducts,
+  getProductDetailById,
+  updateProductStatus
 };

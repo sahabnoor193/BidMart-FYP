@@ -11,14 +11,18 @@ const UserSchema = new mongoose.Schema({
   requestBids: { type: Number, default: 0 },
   acceptedBids: { type: Number, default: 0 },
   favourites: { type: Number, default: 0 },
-  phone: { type: Number, default: undefined,},
-  city: { type: String, default: undefined,},
-  address: {type: String, default: undefined,},
+  phone: { type: Number, default: undefined },
+  city: { type: String, default: undefined },
+  address: { type: String, default: undefined },
   createdAt: { type: Date, default: Date.now },
-  totalFavorites: {
-    type: Number,
-    default: 0
-  },
+  totalFavorites: { type: Number, default: 0 },
+
+  // ✅ New status field
+  status: {
+    type: String,
+    enum: ["active", "inactive", "suspended"],
+    default: "active"
+  }
 });
 
 // ✅ Ensure email & type combination is unique

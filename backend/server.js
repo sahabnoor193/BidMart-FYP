@@ -1,4 +1,6 @@
 require("dotenv").config();
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY); 
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -19,11 +21,17 @@ const alertRoutes = require("./routes/alertRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const bidRoutes = require("./routes/bid");
+const paymentRoutes = require('./routes/paymentRoutes');
 const mongoose = require('mongoose');
 const configureSocket = require('./config/socket');
 const conversationRoutes = require("./routes/conversationRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const messageRoutes = require("./routes/messageRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const Bid = require("./models/Bid");
+const productModel = require("./models/productModel");
+const User = require("./models/User");
+const { sendBidRejectEmail } = require("./services/emailService");
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -37,6 +45,77 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+
+// Webhook endpoint
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error("Webhook Error:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  const session = event.data.object;
+  const bidId = session.metadata?.bidId;
+
+  if (!bidId) {
+    return res.status(400).send("Missing bidId in metadata.");
+  }
+
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const bid = await Bid.findByIdAndUpdate(
+        bidId,
+        { status: 'paid' },
+        { new: true }
+      );
+
+      if (!bid) return res.status(404).send("Bid not found.");
+
+      if (bid.productId) {
+        await productModel.findByIdAndUpdate(bid.productId, { status: 'ended' });
+      }
+
+      if (bid.bidderId) {
+        await User.findByIdAndUpdate(bid.bidderId, { $inc: { acceptedBids: 1 } });
+      }
+
+      console.log(`✅ Bid ${bidId} paid. Product ended. Buyer updated.`);
+    } 
+    else if (event.type === 'checkout.session.expired') {
+      const bid = await Bid.findByIdAndUpdate(
+        bidId,
+        { status: 'rejected' },
+        { new: true }
+      );
+
+      if (!bid) return res.status(404).send("Bid not found.");
+
+      if (bid.productId) {
+        await productModel.findByIdAndUpdate(bid.productId, { status: 'active' });
+        const product = await productModel.findById(bid.productId).populate('user');
+        const seller = product?.user;
+
+        if (seller?.email) {
+          await sendBidRejectEmail(seller.email, product.name, seller.name);
+        }
+      }
+
+      console.log(`⛔ Bid ${bidId} expired. Product set to active.`);
+    }
+
+    res.status(200).json({ received: true });
+
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    res.status(500).send("Server error.");
+  }
+});
+
 
 // Middleware
 app.use(express.json());
@@ -67,7 +146,8 @@ app.use("/api/bids", bidRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
-
+app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 // Create HTTP server
 const server = require('http').createServer(app);
 

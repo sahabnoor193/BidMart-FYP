@@ -18,7 +18,7 @@ const productSchema = new mongoose.Schema({
   isDraft: { type: Boolean, default: false },
   status: { 
     type: String, 
-    enum: ['active', 'ended', 'draft'], 
+    enum: ['active', 'ended', 'draft','pending'], 
     default: 'active' 
   },
   createdAt: { type: Date, default: Date.now },

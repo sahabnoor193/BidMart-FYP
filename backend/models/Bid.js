@@ -18,10 +18,13 @@ const BidSchema = new mongoose.Schema({
   },
   status: { 
     type: String, 
-    enum: ["pending", "accepted", "rejected", "expired"], 
+    enum: ["pending", "accepted", "rejected", "expired","payment pending"], 
     default: "pending" 
   },
   message: { 
+    type: String 
+  },
+  checkoutUrl: { 
     type: String 
   },
   paymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment' },

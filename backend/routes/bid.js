@@ -6,6 +6,8 @@ const {
   createBid,
   getProductBids,
   updateBidStatus,
+  acceptBid,
+  getBidsByUserId,
 } = require("../controllers/bidController");
 
 // Validation middleware
@@ -23,11 +25,12 @@ const validateBid = [
 
 // Create a new bid
 router.post("/", protect, validateBid, createBid);
-
+router.put("/accept", protect, acceptBid);
+router.get("/user/:userId", protect, getBidsByUserId);
 // Get all bids for a product
 router.get("/product/:productId", protect, getProductBids);
 
 // Update bid status
-router.put("/:bidId/status", protect, updateBidStatus);
+router.put("/:bidId/status",  updateBidStatus);
 
 module.exports = router;

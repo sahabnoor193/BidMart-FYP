@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 // Import the icons you need
@@ -379,6 +379,8 @@ const SellerDashboard = () => {
         return `Product "${productName}" has been added to favorites`;
       case 'ended':
         return `Your product "${productName}" has ended`;
+        case 'bid-rejected':
+          return `Buyer have rejected to pay on "${productName}"! You can select any other buyer.`;
       case 'new-bid':
         return  `A new bid has been placed on your product "${productName}"`;
       default:
@@ -469,17 +471,19 @@ const SellerDashboard = () => {
                 <th className="py-2 px-4 text-left border">Bid End</th>
                 <th className="py-2 px-4 text-left border">Time</th>
                 <th className="py-2 px-4 text-left border">Sell</th>
+                <th className="py-2 px-4 text-left border">Action</th>
               </tr>
             </thead>
             <tbody>
               {sellerData.bidHistory && sellerData.bidHistory.length > 0 ? (
                 sellerData.bidHistory.map((bid, index) => (
                   <tr key={index} className="border-b">
-                    <td className="py-2 px-4 border">{bid.item}</td>
+                    <td className="py-2 px-4 border"><Link to={`/dashboard/products/${bid.productId}`}>{bid.item}</Link></td>
                     <td className="py-2 px-4 border">${bid.startPrice}</td>
                     <td className="py-2 px-4 border">${bid.currentPrice}</td>
                     <td className="py-2 px-4 border">{new Date(bid.bidTime).toLocaleString()}</td>
                     <td className="py-2 px-4 border">{bid.sold ? 'Yes' : 'No'}</td>
+                    <td className="py-2 px-4 border"><Link to={`/dashboard/products/${bid.productId}`}>View</Link></td>
                   </tr>
                 ))
               ) : (
@@ -864,7 +868,9 @@ const SellerDashboard = () => {
             Show Products
           </button>
         </div>
-        
+        <div className='mt-1'>
+           <Link to={'/seller/bids'} className='mt-2 bg-black text-white p-2 rounded cursor-pointer w-full flex items-center justify-center'>See Bids</Link>
+        </div>
         {/* Add the new Switch Role button */}
         <div className="mt-4">
           <button 

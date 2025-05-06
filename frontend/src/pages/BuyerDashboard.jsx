@@ -513,10 +513,11 @@
 
 // export default BuyerDashboard;
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { FaList, FaCheckCircle, FaStar, FaExchangeAlt, FaTimes, FaBell } from 'react-icons/fa';
 import { jwtDecode } from 'jwt-decode';
+import { toast } from 'react-toastify';
 
 
 const BuyerDashboard = () => {
@@ -533,7 +534,7 @@ const BuyerDashboard = () => {
     favourites: 0,
     bidHistory: []
   });
-  
+  const [requestedBids, setRequestedBids] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -642,8 +643,13 @@ const BuyerDashboard = () => {
     
     fetchUserData();
   }, [navigate, handleLogout]);
-
+ 
+  useEffect(()=>{
+    // http://localhost:5000/api/bids/user/680fab6148438e23d844fbd2
+  },[])
+  
   useEffect(() => {
+    const id = localStorage.getItem('id');
     const fetchAlerts = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -659,6 +665,29 @@ const BuyerDashboard = () => {
         console.error('Alert fetch error details:', error.response);
       }
     };
+    const fetchBids = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`http://localhost:5000/api/bids/user/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log('Alerts response:', response);
+        // const buyerAlerts = response.data.filter(alert => alert.userType === 'buyer');
+        // setAlerts(buyerAlerts);
+        // setUnreadAlerts(buyerAlerts.filter(alert => !alert.read).length);
+        // setBuyerData((prevData) => ({
+        //   ...prevData,
+        //   requestedBids: response.data.length
+        // }))
+        setRequestedBids(response.data.length);
+      } catch (error) {
+        console.error('Error fetching alerts:', error);
+        console.error('Alert fetch error details:', error.response);
+      }
+    };
+    if(id){
+      fetchBids()
+    }
     fetchAlerts();
   }, []);
 
@@ -785,7 +814,7 @@ const BuyerDashboard = () => {
               <FaList className="text-gray-600 mr-3" size={20} />
               <div>
                 <h3 className="font-semibold">Requested Bids</h3>
-                <p className="text-2xl font-bold">{buyerData.requestedBids}</p>
+                <p className="text-2xl font-bold">{requestedBids}</p>
               </div>
             </div>
           </div>
@@ -1247,6 +1276,7 @@ const BuyerDashboard = () => {
         </div>
         
         <div className="mt-4">
+          <Link to={"/buyer/bids"} className='mb-3 p-2 rounded cursor-pointer w-full flex items-center justify-center bg-red-600 text-white'>All Bids</Link>
           <button 
             className="bg-blue-600 text-white p-2 rounded cursor-pointer w-full flex items-center justify-center"
             onClick={handleSwitchUserType}

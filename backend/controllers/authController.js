@@ -238,7 +238,8 @@ exports.googleRegister = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
+const CLIENT_ID = '1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com';
+const client = new OAuth2Client(CLIENT_ID);
 // Added By Muneeb
 exports.googleLogins = async (req, res) => {
   try {

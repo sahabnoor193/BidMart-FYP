@@ -30,8 +30,11 @@ exports.getBuyerDashboard = async (req, res) => {
         itemName: bid.productId?.name || 'Deleted Item',
         bidAmount: bid.paymentId?.amount || bid.amount,
         paymentDate: bid.paymentId?.createdAt,
+        bidStatus: bid.status,
+        checkoutUrl: bid.checkoutUrl,
         sellerName: bid.productId?.user?.name || 'Unknown Seller',
-        sellerEmail: bid.productId?.user?.email
+        sellerEmail: bid.productId?.user?.email,
+        bidId: bid._id
       }));
   
       res.json({

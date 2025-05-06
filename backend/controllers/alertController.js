@@ -113,7 +113,8 @@ const createAlertAndEmit = async ({ user, userType, product, productName, action
       productName,
       action
     });
-
+   console.log('Created alert:', alert);
+   
     io.to(`user_${user.toString()}`).emit('newAlert', alert);
   } catch (error) {
     console.error('Error creating/emitting alert:', error);

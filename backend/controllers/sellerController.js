@@ -23,6 +23,7 @@ exports.getSellerDashboard = async (req, res) => {
     // Format products for bid history
     const bidHistory = products.map(product => ({
       item: product.name,
+      productId: product._id,
       startPrice: product.startingPrice,
       currentPrice: product.currentPrice || product.startingPrice,
       bidTime: product.createdAt,
@@ -58,7 +59,7 @@ exports.getSellerProducts = asyncHandler(async (req, res) => {
   try {
     const products = await Product.find({ user: req.user._id })
       .sort('-createdAt')
-      .select('name startingPrice currentPrice status startDate endDate isDraft');
+      .select('name startingPrice currentPrice status startDate endDate isDraft images ');
 
     res.json(products);
   } catch (error) {
