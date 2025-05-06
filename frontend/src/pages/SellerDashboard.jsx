@@ -207,6 +207,11 @@ const SellerDashboard = () => {
         console.log('[Switch Account] Switching to existing account');
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userType', response.data.userType);
+        localStorage.setItem("userName", response.data.user.name); // Add this line
+
+      // Replace the entire user object in localStorage
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+
         window.location.href = `/${response.data.userType}-dashboard`;
       } else {
         console.log('[Switch Account] No existing account found, prompting for new account creation');
@@ -229,11 +234,6 @@ const SellerDashboard = () => {
           if (registrationResponse.data.message) {
             console.log('[Switch Account] New account created successfully');
             alert('Account created successfully. Please check your email for verification.');
-  
-            localStorage.setItem('email', profile.email);
-            localStorage.setItem('name', profile.name);
-            localStorage.setItem('password', 'defaultPassword123');
-            localStorage.setItem('type', newType);
   
             handleLogout();
   

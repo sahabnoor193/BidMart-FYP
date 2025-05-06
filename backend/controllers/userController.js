@@ -82,7 +82,14 @@ exports.switchAccount = async (req, res) => {
         exists: true,
         message: `Switched to existing ${newType} account`,
         token,
-        userType: newType
+        userType: newType,
+        user: {
+          id: oppositeAccount._id,
+          _id: oppositeAccount._id,
+          name: oppositeAccount.name,
+          email: oppositeAccount.email,
+          type: oppositeAccount.type
+        }
       });
     }
 

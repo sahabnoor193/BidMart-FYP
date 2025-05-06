@@ -697,6 +697,7 @@ const BuyerDashboard = () => {
       const currentType = localStorage.getItem('userType');
       const newType = currentType === 'buyer' ? 'seller' : 'buyer';
 
+      console.log('[Switch Account] Checking if opposite account exists');
       const response = await axios.put(
         "http://localhost:5000/api/user/switch-account",
         {},
@@ -704,31 +705,43 @@ const BuyerDashboard = () => {
       );
 
       if (response.data.exists) {
+        console.log('[Switch Account] Switching to existing account');
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userType', response.data.userType);
+        localStorage.setItem("userName", response.data.user.name); // Add this line
+        // Replace the entire user object in localStorage
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        console.log('User data after switch:', response.data.user);
+
         window.location.href = `/${response.data.userType}-dashboard`;
       } else {
+        console.log('[Switch Account] No existing account found, prompting for new account creation');
         const createNewAccount = window.confirm(`No ${newType} account found. Create new ${newType} account?`);
         if (createNewAccount) {
+          console.log('[Switch Account] Creating new account');
           const profileResponse = await axios.get("http://localhost:5000/api/user/profile", {
             headers: { Authorization: `Bearer ${token}` }
           });
 
           const profile = profileResponse.data;
-          await axios.post("http://localhost:5000/api/user/switch-register", {
+          const registrationResponse = await axios.post("http://localhost:5000/api/user/switch-register", {
             name: profile.name,
             email: profile.email,
             password: 'defaultPassword123',
             type: newType
           });
 
-          localStorage.setItem('email', profile.email);
-          localStorage.setItem('name', profile.name);
-          localStorage.setItem('password', 'defaultPassword123');
-          localStorage.setItem('type', newType);
-
-          handleLogout();
-          navigate('/otp-verification', { state: { isSwitchVerification: true } });
+          if (registrationResponse.data.message) {
+            console.log('[Switch Account] New account created successfully');
+            alert('Account created successfully. Please check your email for verification.');
+  
+            handleLogout();
+  
+            navigate('/otp-verification', { state: { isSwitchVerification: true } });
+          } else {
+            console.error('[Switch Account] Failed to create new account');
+            alert('Failed to create account. Please try again.');
+          }
         }
       }
     } catch (err) {

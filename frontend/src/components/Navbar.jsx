@@ -8,8 +8,8 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const Navbar = ({isAuthenticated, setIsAuthenticated}) => {
-  const BASEURL = "https://subhan-project-backend.onrender.com";
-  // const BASEURL = "http://localhost:5000";
+  // const BASEURL = "https://subhan-project-backend.onrender.com";
+  const BASEURL = "http://localhost:5000";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(false);  
   const [user, setUser] = useState("");
