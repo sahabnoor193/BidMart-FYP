@@ -613,6 +613,7 @@ const deleteProductForAdmin = asyncHandler(async (req, res) => {
 
     // Delete the product
     await Product.deleteOne({ _id: productId });
+    await Bid.deleteMany({ product: productId });
 
     // Update seller's activeBids count if needed
     if (!product.isDraft && product.status === "active") {
