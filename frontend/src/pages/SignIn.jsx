@@ -227,11 +227,11 @@ const SignIn = ({ setIsAuthenticated }) => {
 
           {/* ✅ Social Login Buttons */}
           <div className="flex justify-center space-x-4">
-            <a href="http://localhost:5000/api/auth/facebook">
+            {/* <a href="http://localhost:5000/api/auth/facebook">
               <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
                 <FaFacebook size={20} className="mr-2" /> Facebook
               </button>
-            </a>
+            </a> */}
             {/* <a href="http://localhost:5000/api/auth/google">
               <button className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300">
                 <FaGoogle size={20} className="mr-2" /> Google

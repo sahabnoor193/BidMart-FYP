@@ -586,6 +586,79 @@ const deleteProduct = asyncHandler(async (req, res) => {
     });
   }
 });
+const deleteProductForAdmin = asyncHandler(async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    // Find the product
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Delete associated images from Cloudinary
+    if (product.images && product.images.length > 0) {
+      try {
+        await Promise.all(
+          product.images.map(async (image) => {
+            if (image.public_id) {
+              await cloudinary.uploader.destroy(image.public_id);
+            }
+          })
+        );
+      } catch (cloudinaryError) {
+        console.error("Cloudinary deletion error:", cloudinaryError);
+      }
+    }
+
+    // Delete the product
+    await Product.deleteOne({ _id: productId });
+
+    // Update seller's activeBids count if needed
+    if (!product.isDraft && product.status === "active") {
+      const now = new Date();
+      const utcNow = Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate()
+      );
+      const startDate = new Date(product.startDate);
+      const endDate = new Date(product.endDate);
+      const utcStart = Date.UTC(
+        startDate.getUTCFullYear(),
+        startDate.getUTCMonth(),
+        startDate.getUTCDate()
+      );
+      const utcEnd = Date.UTC(
+        endDate.getUTCFullYear(),
+        endDate.getUTCMonth(),
+        endDate.getUTCDate()
+      );
+      if (utcStart <= utcNow && utcEnd >= utcNow) {
+        await User.findByIdAndUpdate(product.user, { 
+          $inc: { activeBids: -1 } 
+        });
+      }
+    }
+
+    // Send alerts
+    await Alert.create({
+      user: product.user,
+      userType: 'seller',
+      product: product._id,
+      productName: product.name,
+      action: 'deleted'
+    });
+
+
+    res.status(200).json({ message: "Product deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    res.status(500).json({ 
+      message: error.message || "Server error during product deletion" 
+    });
+  }
+});
 
 // @desc    Update a product
 // @route   PUT /api/products/:id
@@ -783,5 +856,6 @@ module.exports = {
   getDraftProducts,
   getAllProducts,
   getProductDetailById,
-  updateProductStatus
+  updateProductStatus,
+  deleteProductForAdmin
 };

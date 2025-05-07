@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 
 
-const SideBar = () => {
+const SideBar = ({setIsAuthenticated}) => {
   // const [active, setActive] = useState('Dashboard');
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -52,7 +52,10 @@ const SideBar = () => {
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
-
+  const handleLogout = () =>{
+    localStorage.removeItem('adminToken')
+    setIsAuthenticated(false)
+  }
   return (
     <div className='relative flex md:w-1/4 pt-[64px]'>
       {/* Mobile Hamburger Button */}
@@ -93,6 +96,7 @@ const SideBar = () => {
               {item}
             </li>
           ))}
+          <button onClick={handleLogout} className='bg-black p-2 text-white w-full rounded-md cursor-pointer'>Logout</button>
         </ul>
       </div>
       <div 
@@ -122,6 +126,7 @@ const SideBar = () => {
               {item}
             </li>
           ))}
+          <button onClick={handleLogout} className='bg-black p-2 text-white w-full rounded-md cursor-pointer'>Logout</button>
         </ul>
       </div>
 

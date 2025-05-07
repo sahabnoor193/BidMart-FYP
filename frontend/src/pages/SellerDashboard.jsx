@@ -5,13 +5,14 @@ import { toast } from 'react-toastify';
 // Import the icons you need
 import { FaList, FaHistory, FaStar, FaExchangeAlt, FaTimes, FaPlus, FaEdit, FaTrash, FaSave, FaHeart } from 'react-icons/fa';
 
-const SellerDashboard = () => {
+const SellerDashboard = ({setIsAuthenticated}) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [userType, setUserType] = useState('seller'); // Add state for tracking user type
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const BASEURL = "http://localhost:5000";
   
   const [sellerData, setSellerData] = useState({
     activeBids: 0,
@@ -37,7 +38,48 @@ const SellerDashboard = () => {
     newPassword: '',
     confirmNewPassword: ''
   });
-
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+  
+      const response = await axios.post(
+        `${BASEURL}/api/auth/logout`,
+        {}, // empty body (if your API doesn't expect any data)
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+  
+      if (response.status === 200) {
+        toast.success('Logout successful!');
+  
+        // List of keys to remove
+        const keysToRemove = [
+          'email',
+          'name',
+          'password',
+          'sellerData',
+          'token',
+          'type',
+          'userEmail',
+          'userName',
+          'userType',
+        ];
+  
+        keysToRemove.forEach((key) => {
+          localStorage.removeItem(key);
+        });
+         setIsAuthenticated(false); 
+        // Optionally redirect to login page
+        // window.location.href = '/login';
+      } else {
+        toast.error('Logout failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('An error occurred during logout.');
+    }
+  };
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeBids: 0,
@@ -852,7 +894,7 @@ const SellerDashboard = () => {
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "profile" ? "bg-white" : ""}`} onClick={() => setActiveTab("profile")}>Manage My Account</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "alerts" ? "bg-white" : ""}`} onClick={() => setActiveTab("alerts")}>My Alerts</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "chats" ? "bg-white" : ""}`} onClick={() => setActiveTab("chats")}>My Chats</li>
-            <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "logout" ? "bg-white" : ""}`} onClick={handleLogout}>LogOut</li>
+            <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "logout" ? "bg-white" : ""}`} onClick={logout}>LogOut</li>
           </ul>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">

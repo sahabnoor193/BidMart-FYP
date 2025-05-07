@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
-export default function AdminLogin() {
+export default function AdminLogin({setIsAuthenticated}) {
   const [form, setForm] = useState({ userName: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,9 +21,10 @@ export default function AdminLogin() {
 
     try {
       const res = await axios.post('http://localhost:5000/api/admin/login', form);
-      setSuccess('Login successful!');
-      localStorage.setItem('adminToken', res.data.token);
+      toast.success('Login successful!');
       navigate('/Dashboard');
+      localStorage.setItem('adminToken', res.data.token);
+      setIsAuthenticated(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {
