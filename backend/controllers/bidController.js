@@ -171,6 +171,7 @@ exports.getProductBids = asyncHandler(async (req, res) => {
 });
 exports.acceptBid = asyncHandler(async (req, res) => {
   const { bidId, productId, bidderEmail } = req.body;
+  const io = req.app.get('io');
 
   // 1. Fetch bid details
   const bid = await Bid.findById(bidId);
@@ -204,6 +205,13 @@ exports.acceptBid = asyncHandler(async (req, res) => {
   });
 
   const checkoutUrl = response.data.url;
+  await createAlertAndEmit({
+    user: bid.bidderId,
+    userType: "buyer",
+    product: product._id,
+    productName: product.name,
+    action: "bid-accepted"
+  }, io);
   bid.checkoutUrl = checkoutUrl;
   await Promise.all([bid.save(), product.save()]);
   // 3. Send email to buyer
@@ -215,71 +223,73 @@ exports.acceptBid = asyncHandler(async (req, res) => {
 // @route   PUT /api/bids/:bidId/status
 // @access  Private (Seller only)
 exports.updateBidStatus = asyncHandler(async (req, res) => {
-  try {
-    const { bidId } = req.params;
-    const { status } = req.body;
-  // console.log(bidId, "bIS");
-  
-    // Find the bid and populate product and bidder
-    const bid = await Bid.findById(bidId)
-      .populate("productId")
-      .populate("bidderId");
-    
-    if (!bid) {
-      return res.status(404).json({ message: "Bid not found" });
-    }
-    // console.log(bid, "bid");
-    
-    const product = bid.productId;
-    const buyer = bid.bidderId;
-    const seller = await User.findById(product.user);
+  const { bidId } = req.params;
+  const { status } = req.body;
 
-    // Check if user is the seller
-    // if (product.user.toString() !== req.user._id.toString()) {
-    //   return res.status(403).json({ message: "Not authorized" });
-    // }
+  const bid = await Bid.findById(bidId)
+    .populate({
+      path: "productId",
+      populate: { path: "user" } // populate seller (user) inside product
+    })
+    .populate("bidderId");
 
-    // Update bid status
-    bid.status = status;
-    await bid.save();
-
-
-    const io = req.app.get('io');
-// console.log(io, "io");
-
-    // Emit bid status update to product watchers
-    io.to(`product_${product._id}`).emit('bidStatusUpdate', {
-      bidId: bid._id,
-      status: bid.status
-    });
-
-    // Emit bid notification to the seller
-    io.to(`user_${product.user.toString()}`).emit("bidNotification", {
-      productId: product._id,
-      productName: product.name,
-      amount: bid.amount,
-      bidder: {
-        name: buyer.name,
-        email: buyer.email
-      },
-      timestamp: bid.createdAt
-    });
-
-    // Emit custom alert to seller only if rejected
-    if (status === "rejected") {
-      await createAlertAndEmit({
-        user: product.user, // seller's user ID
-        userType: "seller",
-        product: product._id,
-        productName: product.name,
-        action: "bid-rejected"
-      }, io);
-      await sendBidRejectEmail(seller.email, product.name, seller.name);
-    }
-
-    res.json(bid);
-  } catch (error) {
-    console.error("Error updating bid status:", error);
-    res.status(500).json({ message: "Server error" });
+  if (!bid) {
+    return res.status(404).json({ message: "Bid not found" });
   }
+
+  const product = bid.productId;
+  const buyer = bid.bidderId;
+  const seller = product.user;
+
+  if (!seller || !seller.email) {
+    return res.status(500).json({ message: "Seller information is missing" });
+  }
+
+  // Update bid status
+  bid.status = status;
+  await bid.save();
+
+  const io = req.app.get('io');
+
+  // Emit bid status update to product watchers
+  io.to(`product_${product._id}`).emit('bidStatusUpdate', {
+    bidId: bid._id,
+    status: bid.status
+  });
+
+  // Emit bid notification to the seller
+  io.to(`user_${seller._id}`).emit("bidNotification", {
+    productId: product._id,
+    productName: product.name,
+    amount: bid.amount,
+    bidder: {
+      name: buyer.name,
+      email: buyer.email
+    },
+    timestamp: bid.createdAt
+  });
+
+  // Emit custom alert to both parties if rejected
+  if (status === "rejected") {
+    await createAlertAndEmit({
+      user: seller._id,
+      userType: "seller",
+      product: product._id,
+      productName: product.name,
+      action: "bid-rejected"
+    }, io);
+    await sendBidRejectEmail(seller.email, product.name, seller.name);
+
+    await createAlertAndEmit({
+      user: buyer._id,
+      userType: "buyer",
+      product: product._id,
+      productName: product.name,
+      action: "bid-rejected"
+    }, io);
+    await sendBidRejectEmail(buyer.email, product.name, buyer.name);
+  }
+
+  res.json(bid);
 });
+

@@ -375,6 +375,8 @@ const SellerDashboard = () => {
         return `Product "${productName}" has been deleted`;
       case 'draft':
         return `Product "${productName}" has been saved as draft`;
+        case 'product_sold':
+          return `Payment for "${productName}" has been successfull by the Buyer!`;
       case 'favorited':
         return `Product "${productName}" has been added to favorites`;
       case 'ended':

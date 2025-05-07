@@ -31,7 +31,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const Bid = require("./models/Bid");
 const productModel = require("./models/productModel");
 const User = require("./models/User");
-const { sendBidRejectEmail } = require("./services/emailService");
+const { sendBidRejectEmail, sendPaymentSuccessEmail } = require("./services/emailService");
+const { createAlertAndEmit } = require("./controllers/alertController");
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -73,17 +74,52 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         { status: 'paid' },
         { new: true }
       );
-
+      const productId = bid.productId;
+      const product = await productModel.findById(productId);
+      const buyerId = bid.bidderId;
+      const buyer = await User.findById(buyerId);
+      const seller = await User.findById(product.user);
+      
+      
       if (!bid) return res.status(404).send("Bid not found.");
 
       if (bid.productId) {
         await productModel.findByIdAndUpdate(bid.productId, { status: 'ended' });
       }
-
       if (bid.bidderId) {
         await User.findByIdAndUpdate(bid.bidderId, { $inc: { acceptedBids: 1 } });
       }
+      if (buyer?._id) {
+        await User.findByIdAndUpdate(buyer._id, { $inc: { acceptedBids: 1 } });
+      }
 
+      // Send emails
+      if (buyer?.email) {
+        await sendPaymentSuccessEmail(buyer.email, product.name, 'buyer', buyer.name);
+      }
+      if (seller?.email) {
+        await sendPaymentSuccessEmail(seller.email, product.name, 'seller', seller.name);
+      }
+
+      if (buyer?._id) {
+        await createAlertAndEmit({
+          user: buyer._id,
+          userType: 'buyer',
+          product: product._id,
+          productName: product.name,
+          action: 'payment_success'
+        }, io);
+      }
+
+      if (seller?._id) {
+        await createAlertAndEmit({
+          user: seller._id,
+          userType: 'seller',
+          product: product._id,
+          productName: product.name,
+          action: 'product_sold'
+        }, io);
+      }
       console.log(`✅ Bid ${bidId} paid. Product ended. Buyer updated.`);
     } 
     else if (event.type === 'checkout.session.expired') {
@@ -102,6 +138,15 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
         if (seller?.email) {
           await sendBidRejectEmail(seller.email, product.name, seller.name);
+        }
+        if (seller?._id) {
+          await createAlertAndEmit({
+            user: seller._id,
+            userType: 'seller',
+            product: product._id,
+            productName: product.name,
+            action: 'payment_failed'
+          }, io);
         }
       }
 
@@ -122,7 +167,7 @@ app.use(express.json());
 
 // Allow both frontend ports
 const corsOptions = {
-  origin: ['http://localhost:5000', 'http://localhost:5173'], // Add your frontend URL
+  origin: ['http://localhost:5000', 'http://localhost:5173','http://localhost:5174'], // Add your frontend URL
   credentials: true,  // Allows cookies & authentication headers
 };
 

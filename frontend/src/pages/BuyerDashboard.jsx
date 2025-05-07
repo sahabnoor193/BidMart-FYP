@@ -1029,6 +1029,8 @@ const BuyerDashboard = () => {
           return `Bid placed on "${alert.productName}"`;
         case 'bid-accepted':
           return `Your bid for "${alert.productName}" was accepted!`;
+          case 'payment_success':
+            return `Payment Successful for "${alert.productName}"!`;
         case 'bid-rejected':
           return `Your bid for "${alert.productName}" was rejected`;
         default:

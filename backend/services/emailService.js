@@ -85,3 +85,41 @@ exports.sendBidRejectEmail = async (email, productName, userName) => {
   await transporter.sendMail(mailOptions);
   console.log("📩 Bid Rejected Email Sent to:", email);
 };
+
+exports.sendPaymentSuccessEmail = async (to, productName, type, name) => {
+  let subject, html;
+
+  if (type === 'buyer') {
+    subject = 'Payment Successful - Thank You for Your Purchase!';
+    html = `
+      <p>Hi ${name},</p>
+      <p>Thank you for your payment. You've successfully purchased <strong>${productName}</strong>.</p>
+      <p>We'll notify the seller and keep you updated.</p>
+      <p>Best regards,<br/>KuchBhi Team</p>
+    `;
+  } else if (type === 'seller') {
+    subject = 'Your Product Has Been Sold!';
+    html = `
+      <p>Hi ${name},</p>
+      <p>Good news! Your product <strong>${productName}</strong> has been sold and payment has been received.</p>
+      <p>You can now proceed to coordinate delivery or next steps with the buyer.</p>
+      <p>Best regards,<br/>KuchBhi Team</p>
+    `;
+  } else {
+    throw new Error("Invalid type passed to sendPaymentSuccessEmail");
+  }
+
+  const mailOptions = {
+    from: `"KuchBhi" <${process.env.EMAIL_USERNAME}>`,
+    to,
+    subject,
+    html
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Payment success email sent to ${type}: ${to}`);
+  } catch (error) {
+    console.error(`❌ Failed to send email to ${to}:`, error);
+  }
+};

@@ -11,6 +11,7 @@ const BuyerBids = () => {
         favourites: 0,
         bidHistory: []
       });
+      const [stateChange, setStateChange] = useState(false);
   const navigate = useNavigate();
   const handleLogout = useCallback(() => {
     console.log('[Logout] Clearing local storage and redirecting');
@@ -47,7 +48,7 @@ const BuyerBids = () => {
         isLoading: false,
         autoClose: 3000,
       });
-  
+     setStateChange(!stateChange);
       return data;
   
     } catch (error) {
@@ -118,7 +119,7 @@ const BuyerBids = () => {
         };
         
         fetchUserData();
-      }, []);
+      }, [stateChange]);
     return (
         <div className="container mx-auto px-4 py-8">
                     <h2 className="text-xl font-bold mb-4">Bid History</h2>
