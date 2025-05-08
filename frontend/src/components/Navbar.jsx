@@ -14,6 +14,7 @@ const Navbar = ({isAuthenticated, setIsAuthenticated}) => {
   const [isLogin, setIsLogin] = useState(false);  
   const [user, setUser] = useState("");
   const [userRole, setUserRole] = useState("");
+  
     useEffect(() => {
       const token = localStorage.getItem("token");
       if (token) {
@@ -22,6 +23,11 @@ const Navbar = ({isAuthenticated, setIsAuthenticated}) => {
         setUserRole(userType);
         setUser(userName);
         setIsAuthenticated(true);
+      }
+      else {
+        setUser(""); // Clear the user state
+        setUserRole(""); // Clear the user role state
+        setIsAuthenticated(false);
       }
     }, [isAuthenticated]);
   
@@ -76,9 +82,12 @@ const Navbar = ({isAuthenticated, setIsAuthenticated}) => {
         keysToRemove.forEach((key) => {
           localStorage.removeItem(key);
         });
-         setIsAuthenticated(false); 
+          
         // Optionally redirect to login page
         // window.location.href = '/login';
+        setUser(""); // Clear the user state
+        setUserRole(""); // Clear the user role state
+        setIsAuthenticated(false);
       } else {
         toast.error('Logout failed. Please try again.');
       }
