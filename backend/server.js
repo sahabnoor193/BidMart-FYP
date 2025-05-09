@@ -33,6 +33,7 @@ const productModel = require("./models/productModel");
 const User = require("./models/User");
 const { sendBidRejectEmail, sendPaymentSuccessEmail } = require("./services/emailService");
 const { createAlertAndEmit } = require("./controllers/alertController");
+const Payment = require("./models/Payment");
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -69,18 +70,21 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
   try {
     if (event.type === 'checkout.session.completed') {
-      const bid = await Bid.findByIdAndUpdate(
-        bidId,
-        { status: 'paid' },
-        { new: true }
-      );
+      let bid = await Bid.findById(bidId);
       const productId = bid.productId;
       const product = await productModel.findById(productId);
       const buyerId = bid.bidderId;
       const buyer = await User.findById(buyerId);
       const seller = await User.findById(product.user);
-      
-      
+       const payment = await Payment.create({
+    bidId: bid._id,
+    amount: bid.amount,
+    status: 'completed' 
+  });
+        bid.status = 'Payment Success';
+  bid.paymentId = payment._id;
+  await bid.save();
+
       if (!bid) return res.status(404).send("Bid not found.");
 
       if (bid.productId) {

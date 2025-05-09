@@ -24,13 +24,15 @@ const ProductInfo = ({
   const [bidAmount, setBidAmount] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const percentage = multiplier * bidIncrease;
-
-  const price = Math.ceil(startBid * (1 + percentage / 100));
+  const [percentage, setPercentage] = useState(1);
+  const [userType, setUserType] = useState('');
+const price = startBid + (startBid * (parseFloat(percentage) || 0) / 100);
 
   const [userId, setUserId] = useState('');
   useEffect(()=>{
   const  user = localStorage.getItem('id');
+  const  userType = localStorage.getItem('userType');
+     setUserType(userType);
   setUserId(user);
   },[])
 
@@ -69,7 +71,7 @@ const ProductInfo = ({
   const handleBidSubmit = async () => {
     const numericBid = parseFloat(price);
     
-    if (isNaN(price) || price <= latestBid) {
+    if (isNaN(price) || price <= startBid) {
       toast.error('Please enter a valid bid amount higher than the latest bid');
       return;
     }
@@ -167,12 +169,12 @@ const ProductInfo = ({
         
         <div className="flex flex-col gap-1">
           <span className="text-gray-600 text-sm">Start Bid</span>
-          <span className="font-medium text-gray-800">Rs: {startBid.toFixed(2)}</span>
+          <span className="font-medium text-gray-800">${startBid.toFixed(2)}</span>
         </div>
         
         <div className="flex flex-col gap-1">
           <span className="text-gray-600 text-sm">Latest Bid</span>
-          <span className="font-medium text-green-600">Rs: {latestBid.toFixed(2)}</span>
+          <span className="font-medium text-green-600">${latestBid.toFixed(2)}</span>
         </div>
         
         <div className="flex flex-col gap-1">
@@ -181,7 +183,7 @@ const ProductInfo = ({
         </div>
         <div className="flex items-center gap-4 mt-4">
       <button
-        onClick={decrement}
+ onClick={() => setPercentage((prev) => Math.max(0, Number(prev) - 1))}
         className="p-2 rounded-full border hover:bg-gray-100"
       >
         <Minus size={16} />
@@ -190,32 +192,16 @@ const ProductInfo = ({
       <span className="text-sm font-medium w-10 text-center">{percentage}%</span>
 
       <button
-        onClick={increment}
+        onClick={() => setPercentage((prev) => Number(prev) + 1)}
         className="p-2 rounded-full border hover:bg-gray-100"
       >
         <Plus size={16} />
       </button>
 
       <span className="ml-4 text-md font-semibold text-gray-800">
-        Rs: {price.toLocaleString("en-PK", { minimumFractionDigits: 2 })}
+        ${price.toLocaleString("en-PK", { minimumFractionDigits: 2 })}
       </span>
     </div>
-        {/* <div className="flex gap-2 mt-6">
-          <div className="flex-1 flex items-center border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
-            <span className="px-3 text-gray-500 bg-gray-50">Rs:</span>
-            <input
-              type="number"
-              value={bidAmount}
-              readOnly={sellerId === userId}
-              onChange={(e) => setBidAmount(e.target.value)}
-              className="flex-1 px-2 py-2 focus:outline-none"
-              placeholder="Enter bid amount"
-              min={latestBid + 1}
-              step="1"
-            />
-            <span className="px-3 text-gray-500 bg-gray-50">.00</span>
-          </div>
-        </div> */}
         
         <div className="flex gap-2">
           <button 
@@ -239,9 +225,9 @@ const ProductInfo = ({
           <button 
             className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleBidSubmit}
-            disabled={!price || parseFloat(price) <= latestBid || sellerId === userId}
+            disabled={!price || parseFloat(price) <= startBid || sellerId === userId}
           >
-            {sellerId === userId ? 'Product Owner Cannot Bid' : 'Place Bid'}
+            {sellerId === userId ? 'Product Owner Cannot Bid': userType === "seller"? "Seller Can't Bid": 'Place Bid'}
           </button>
         </div>
       </div>

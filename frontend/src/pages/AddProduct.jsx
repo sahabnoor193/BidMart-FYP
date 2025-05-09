@@ -106,7 +106,7 @@ const AddProduct = () => {
     try {
       console.log('Checking required fields');
       // Validate required fields
-      const requiredFields = ['name', 'description', 'brand', 'quantity', 'country', 'city', 'startingPrice', 'bidQuantity', 'bidIncrease', 'category', 'startDate', 'endDate'];
+      const requiredFields = ['name', 'description', 'brand', 'quantity', 'country', 'city', 'startingPrice', 'category', 'startDate', 'endDate'];
       const missingFields = requiredFields.filter(field => !formData[field]);
       
       if (missingFields.length > 0) {
@@ -126,8 +126,7 @@ const AddProduct = () => {
         country: formData.country.trim(),
         city: formData.city.trim(),
         startingPrice: parseFloat(formData.startingPrice),
-        bidQuantity: parseInt(formData.bidQuantity),
-        bidIncrease: parseFloat(formData.bidIncrease),
+
         category: formData.category,
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
@@ -148,18 +147,6 @@ const AddProduct = () => {
       if (isNaN(productData.startingPrice) || productData.startingPrice <= 0) {
         console.log('Invalid starting price');
         toast.error('Please enter a valid starting price');
-        setIsSubmitting(false);
-        return;
-      }
-      if (isNaN(productData.bidQuantity) || productData.bidQuantity <= 0) {
-        console.log('Invalid bid quantity');
-        toast.error('Please enter a valid bid quantity');
-        setIsSubmitting(false);
-        return;
-      }
-      if (isNaN(productData.bidIncrease) || productData.bidIncrease <= 0) {
-        console.log('Invalid bid increase');
-        toast.error('Please enter a valid bid increase percentage');
         setIsSubmitting(false);
         return;
       }
@@ -406,7 +393,7 @@ const AddProduct = () => {
                     className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600"
                   />
                 </div>
-                <div>
+                {/* <div>
                   <label htmlFor="bidQuantity" className="block text-sm font-medium text-gray-700 mb-2">Bid Quantity*</label>
                   <input 
                     type="number" 
@@ -417,10 +404,10 @@ const AddProduct = () => {
                     min="1"
                     className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600"
                   />
-                </div>
+                </div> */}
               </div>
 
-              <div className="mt-4">
+              {/* <div className="mt-4">
                 <label htmlFor="bidIncrease" className="block text-sm font-medium text-gray-700 mb-2">Bid Increase (%)*</label>
                 <input 
                   type="number" 
@@ -432,7 +419,7 @@ const AddProduct = () => {
                   max="100"
                   className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
-              </div>
+              </div> */}
             </div>
           </div>
 
