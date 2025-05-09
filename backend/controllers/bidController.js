@@ -5,7 +5,7 @@ const Alert = require("../models/alertModel");
 const asyncHandler = require("express-async-handler");
 const { validationResult } = require('express-validator');
 const { createAlertAndEmit } = require("./alertController");
-const { sendCheckoutLinkEmail, sendBidRejectEmail } = require("../services/emailService");
+const { sendCheckoutLinkEmail, sendBidRejectEmail, sendBidRejectEmailForBuyer } = require("../services/emailService");
 const axios = require('axios');
 const Payment = require("../models/Payment");
 
@@ -184,14 +184,7 @@ exports.acceptBid = asyncHandler(async (req, res) => {
   bid.status = 'payment pending';
   product.status = 'pending';
 
-  const payment = await Payment.create({
-    bidId: bid._id,
-    amount: bid.amount,
-    status: 'pending'
-  });
 
-
-  bid.paymentId = payment._id;
 
   // 2. Create checkout session
   const response = await axios.post('http://localhost:5000/api/payments/create-checkout-session', {
@@ -244,7 +237,8 @@ exports.updateBidStatus = asyncHandler(async (req, res) => {
   if (!seller || !seller.email) {
     return res.status(500).json({ message: "Seller information is missing" });
   }
-
+  product.status = 'active';
+  await product.save();
   // Update bid status
   bid.status = status;
   await bid.save();
@@ -287,7 +281,7 @@ exports.updateBidStatus = asyncHandler(async (req, res) => {
       productName: product.name,
       action: "bid-rejected"
     }, io);
-    await sendBidRejectEmail(buyer.email, product.name, buyer.name);
+    await sendBidRejectEmailForBuyer(buyer.email, product.name, buyer.name);
   }
 
   res.json(bid);

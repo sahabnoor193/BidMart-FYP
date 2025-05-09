@@ -34,7 +34,7 @@ const createProduct = asyncHandler(async (req, res) => {
 
     // Basic validation
     if (!name || !description || !brand || !quantity || !country || !city || 
-        !startingPrice || !bidQuantity || !bidIncrease || !category || 
+        !startingPrice  || !category || 
         !startDate || !endDate) {
       console.log('Missing required fields:', {
         name: !!name,
@@ -44,8 +44,6 @@ const createProduct = asyncHandler(async (req, res) => {
         country: !!country,
         city: !!city,
         startingPrice: !!startingPrice,
-        bidQuantity: !!bidQuantity,
-        bidIncrease: !!bidIncrease,
         category: !!category,
         startDate: !!startDate,
         endDate: !!endDate
@@ -60,12 +58,6 @@ const createProduct = asyncHandler(async (req, res) => {
     }
     if (isNaN(startingPrice) || startingPrice <= 0) {
       throw new Error("Starting price must be a positive number");
-    }
-    if (isNaN(bidQuantity) || bidQuantity <= 0) {
-      throw new Error("Bid quantity must be a positive number");
-    }
-    if (isNaN(bidIncrease) || bidIncrease <= 0) {
-      throw new Error("Bid increase must be a positive number");
     }
 
     // Validate dates
@@ -129,8 +121,6 @@ const createProduct = asyncHandler(async (req, res) => {
       country,
       city,
       startingPrice: parseFloat(startingPrice),
-      bidQuantity: parseInt(bidQuantity),
-      bidIncrease: parseFloat(bidIncrease),
       category,
       startDate: startDateObj,
       endDate: endDateObj,

@@ -78,7 +78,21 @@ exports.sendBidRejectEmail = async (email, productName, userName) => {
     subject: `${userName} has rejected payment for ${productName}! So you can select any other buyer.`,
     html: `
       <p>Hi,</p>
-      <p>${userName} has rejected payment for ${productName}! So you can select any other buyer.</p>
+      <p>${userName} bid has been rejected for ${productName}! So you can select any other buyer.</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log("📩 Bid Rejected Email Sent to:", email);
+};
+exports.sendBidRejectEmailForBuyer = async (email, productName, userName) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: `Bid Rejected For ${productName}!.`,
+    html: `
+      <p>Hi,</p>
+      <p>${userName} you bid has been rejected payment for ${productName}! You can Bid Again if you want.</p>
     `,
   };
 
@@ -110,7 +124,7 @@ exports.sendPaymentSuccessEmail = async (to, productName, type, name) => {
   }
 
   const mailOptions = {
-    from: `"KuchBhi" <${process.env.EMAIL_USERNAME}>`,
+    from: `"Bid Mart 2025" <${process.env.EMAIL_USERNAME}>`,
     to,
     subject,
     html
