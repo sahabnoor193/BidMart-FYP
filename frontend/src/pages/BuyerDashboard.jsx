@@ -520,7 +520,8 @@ import { jwtDecode } from 'jwt-decode';
 import { toast } from 'react-toastify';
 
 
-const BuyerDashboard = () => {
+const BuyerDashboard = ({setIsAuthenticated}) => {
+    const BASEURL = "http://localhost:5000";
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -534,6 +535,48 @@ const BuyerDashboard = () => {
     favourites: 0,
     bidHistory: []
   });
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+  
+      const response = await axios.post(
+        `${BASEURL}/api/auth/logout`,
+        {}, // empty body (if your API doesn't expect any data)
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+  
+      if (response.status === 200) {
+        toast.success('Logout successful!');
+  
+        // List of keys to remove
+        const keysToRemove = [
+          'email',
+          'name',
+          'password',
+          'sellerData',
+          'token',
+          'type',
+          'userEmail',
+          'userName',
+          'userType',
+        ];
+  
+        keysToRemove.forEach((key) => {
+          localStorage.removeItem(key);
+        });
+         setIsAuthenticated(false); 
+        // Optionally redirect to login page
+        // window.location.href = '/login';
+      } else {
+        toast.error('Logout failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('An error occurred during logout.');
+    }
+  };
   const [requestedBids, setRequestedBids] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -1286,7 +1329,7 @@ const BuyerDashboard = () => {
           <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "profile" ? "bg-white" : ""}`} onClick={() => setActiveTab("profile")}>Manage My Account</li>
           <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "alerts" ? "bg-white" : ""}`} onClick={() => setActiveTab("alerts")}>My Alerts</li>
           <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "chats" ? "bg-white" : ""}`} onClick={() => setActiveTab("chats")}>My Chats</li>
-          <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "logout" ? "bg-white" : ""}`} onClick={handleLogout}>LogOut</li>
+          <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "logout" ? "bg-white" : ""}`} onClick={logout}>LogOut</li>
         </ul>
         </div>
         

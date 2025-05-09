@@ -13,6 +13,17 @@ export const fetchAllProducts = createAsyncThunk(
     }
   }
 );
+export const deleteProduct = createAsyncThunk(
+  'products/deleteProduct',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axios.delete(`http://localhost:5000/api/products/deleteProductForAdmin/${id}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
 
 // Initial state
 const initialState = {

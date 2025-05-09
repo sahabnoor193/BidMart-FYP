@@ -19,6 +19,7 @@ router.get("/getAllProducts", productController.getAllProducts);
 router.get("/getProductById/:id", productController.getProductById);
 router.put("/updateProductStatus/:id", productController.updateProductStatus);
 router.delete("/deleteProduct/:id", productController.deleteProduct);
+router.delete("/deleteProductForAdmin/:id", productController.deleteProductForAdmin);
 // Public route (keep this last to avoid conflict)
 router.get('/:id', productController.getProductById);
 

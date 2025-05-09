@@ -123,9 +123,9 @@ const Navbar = ({isAuthenticated, setIsAuthenticated}) => {
             <button className="p-2 rounded-full hover:bg-gray-100">
               <FiSearch className="w-5 h-5" />
             </button>
-            <button className="p-2 rounded-full hover:bg-gray-100">
+            {/* <button className="p-2 rounded-full hover:bg-gray-100">
               <FiShoppingCart className="w-5 h-5" />
-            </button>
+            </button> */}
             {/* Heart Button with Conditional Color */}
             <Link to="/favouritebids">
               <button className="p-2 rounded-full hover:bg-gray-100">

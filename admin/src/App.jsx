@@ -12,6 +12,8 @@ import Testimonials from './pages/Testimonials';
 import Testimonial_Details from './pages/Testimonial_Details';
 import AdminLogin from './pages/AdminLogin';
 import PrivateRoute from './Components/PrivateRoute';
+import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from 'react-toastify';
 
 function AppWrapper() {
   const location = useLocation();
@@ -22,7 +24,7 @@ function AppWrapper() {
 
   const clearAuth = () => {
     localStorage.removeItem('adminToken');
-    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('adminToken');
     setIsAuthenticated(false);
   };
 
@@ -40,7 +42,7 @@ function AppWrapper() {
       setLoading(false);
     };
     checkAuth();
-  }, []);
+  }, [isAuthenticated]);
 
   if (loading) return <div className="text-white text-center mt-20">Checking auth...</div>;
 
@@ -48,9 +50,9 @@ function AppWrapper() {
     <>
       {!isLoginPage && isAuthenticated && <Navbar />}
       <div className={!isLoginPage && isAuthenticated ? 'flex' : ''}>
-        {!isLoginPage && isAuthenticated && <SideBar />}
+        {!isLoginPage && isAuthenticated && <SideBar setIsAuthenticated={setIsAuthenticated}/>}
         <Routes>
-          <Route path="/login" element={!isAuthenticated ? <AdminLogin /> : <Navigate to="/" />} />
+          <Route path="/login" element={!isAuthenticated ? <AdminLogin setIsAuthenticated={setIsAuthenticated}/> : <Navigate to="/" />} />
           <Route path="/" element={<Navigate to="/Dashboard" replace />} />
           <Route path="/Dashboard" element={<PrivateRoute isAuthenticated={isAuthenticated}><Admin_Dashboard_Content /></PrivateRoute>} />
           <Route path="/Users" element={<PrivateRoute isAuthenticated={isAuthenticated}><Admin_Dashboard_Users /></PrivateRoute>} />
@@ -59,6 +61,7 @@ function AppWrapper() {
           <Route path="/Products" element={<PrivateRoute isAuthenticated={isAuthenticated}><Products /></PrivateRoute>} />
           <Route path="/Testimonials" element={<PrivateRoute isAuthenticated={isAuthenticated}><Testimonials /></PrivateRoute>} />
           <Route path="/Testimonial_Details" element={<PrivateRoute isAuthenticated={isAuthenticated}><Testimonial_Details /></PrivateRoute>} />
+
         </Routes>
       </div>
     </>
@@ -69,6 +72,8 @@ function App() {
   return (
     <BrowserRouter>
       <AppWrapper />
+      <ToastContainer />
+
     </BrowserRouter>
   );
 }

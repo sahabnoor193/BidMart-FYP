@@ -232,11 +232,11 @@ const Signup = ({ setIsAuthenticated }) => {
             </div>
 
             <div className="flex justify-center space-x-4">
-              <a href="http://localhost:5000/api/auth/facebook">
+              {/* <a href="http://localhost:5000/api/auth/facebook">
                 <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
                   <FaFacebook size={20} className="mr-2" /> Facebook
                 </button>
-              </a>
+              </a> */}
 
               <GoogleOAuthProvider clientId="1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com">
                 <GoogleLogin onSuccess={(response) => googleLoginHandler(response)}
