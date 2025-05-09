@@ -142,6 +142,9 @@ const DashboardProduct = () => {
   }
   const isPaymentPending = bids?.some(bid => bid.status === "payment pending");
   const pendingPayment = bids?.find(bid => bid.status === "payment pending");
+  
+  const isPaymentSuccess = bids?.some(bid => bid.status === "Payment Success");
+  const successPayment = bids?.find(bid => bid.status === "Payment Success");
 
  console.log(pendingPayment,"isPaymentPending");
  
@@ -251,6 +254,12 @@ const DashboardProduct = () => {
                   <p>You have already accept the bid of {pendingPayment?.bidderId.name} with amount of Rs:{pendingPayment?.amount}!</p>
                   </div>                  
                 )}
+                {isPaymentSuccess && (
+                <div className="flex items-center gap-2 p-2 text-sm bg-yellow-100 rounded-lg">
+                <Info/>
+                  <p> {successPayment?.bidderId.name} has been awared for the bid of Rs:{successPayment?.amount}!</p>
+                  </div>                  
+                )}
 
                 {bids && bids.length > 0 ? (
                   bids.map((bid) => (
@@ -270,7 +279,7 @@ const DashboardProduct = () => {
                         {bid.status !== 'rejected' ? (
                           <div className="flex gap-2">
                         <button
-                         disabled={isPaymentPending}
+                         disabled={isPaymentPending || isPaymentSuccess}
                           onClick={() =>
                             handleAcceptBid(
                               bid._id,
@@ -284,7 +293,7 @@ const DashboardProduct = () => {
                           <Check size={20} />
                         </button>
                         <button
-                         disabled={isPaymentPending}
+                         disabled={isPaymentPending || isPaymentSuccess}
                           onClick={() => updateBidStatus(bid._id)}
                           className="disabled:cursor-not-allowed disabled:opacity-50 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"
                         >
