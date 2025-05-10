@@ -70,7 +70,7 @@ const UserControl = () => {
     if (!userData?._id) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/use/deleteUser/${userData._id}`, {
+      const response = await fetch(`http://localhost:5000/api/user/deleteUser/${userData._id}`, {
         method: 'DELETE',
       });
 
@@ -216,8 +216,8 @@ const UserControl = () => {
                 </>
               )}
             </button>
-            <button className="flex-1 flex items-center justify-center cursor-pointer gap-3 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
-              <FiTrash2 size={18} onClick={handleDeleteUser} />
+            <button onClick={handleDeleteUser} className="flex-1 flex items-center justify-center cursor-pointer gap-3 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+              <FiTrash2 size={18}  />
               Delete Account
             </button>
           </div>

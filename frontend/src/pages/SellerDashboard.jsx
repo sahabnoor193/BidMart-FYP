@@ -524,7 +524,7 @@ const SellerDashboard = ({setIsAuthenticated}) => {
                   <tr key={index} className="border-b">
                     <td className="py-2 px-4 border"><Link to={`/dashboard/products/${bid.productId}`}>{bid.item}</Link></td>
                     <td className="py-2 px-4 border">${bid.startPrice}</td>
-                    <td className="py-2 px-4 border">${bid.currentPrice}</td>
+                    <td className="py-2 px-4 border">{bid.soldPrice && '$'}{bid.soldPrice || 'Active'}</td>
                     <td className="py-2 px-4 border">{new Date(bid.bidTime).toLocaleString()}</td>
                     <td className="py-2 px-4 border">{bid.sold ? 'Yes' : 'No'}</td>
                     <td className="py-2 px-4 border"><Link to={`/dashboard/products/${bid.productId}`}>View</Link></td>
