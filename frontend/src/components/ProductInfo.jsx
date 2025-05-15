@@ -17,7 +17,6 @@ const ProductInfo = ({
   sellerId,
   bidIncrease
 }) => {
-  // const BASEURL = "https://subhan-project-backend.onrender.com";
   const BASEURL = "http://localhost:5000";
   const [multiplier, setMultiplier] = useState(1); // 1x = 5%, 2x = 10%, etc.
 

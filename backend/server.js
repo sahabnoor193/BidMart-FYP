@@ -21,6 +21,7 @@ const alertRoutes = require("./routes/alertRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const bidRoutes = require("./routes/bid");
+const stripeRoute = require("./routes/stripe");
 const paymentRoutes = require('./routes/paymentRoutes');
 const mongoose = require('mongoose');
 const configureSocket = require('./config/socket');
@@ -171,7 +172,7 @@ app.use(express.json());
 
 // Allow both frontend ports
 const corsOptions = {
-  origin: ['http://localhost:5000', 'http://localhost:5173','http://localhost:5174'], // Add your frontend URL
+  origin: ['http://localhost:5000', 'http://localhost:5173','http://localhost:5174','http://192.168.5.91:5173'], // Add your frontend URL
   credentials: true,  // Allows cookies & authentication headers
 };
 
@@ -185,6 +186,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/seller", sellerRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/buyer", buyerRoutes);
+app.use("/api/stripe", stripeRoute);
 app.use("/api/products", productRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/favorites", favoriteRoutes);

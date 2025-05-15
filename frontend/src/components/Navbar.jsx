@@ -6,6 +6,7 @@ import Logo from '../assets/Logo.png';
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { jwtDecode } from 'jwt-decode';
 
 const Navbar = ({isAuthenticated, setIsAuthenticated}) => {
   // const BASEURL = "https://subhan-project-backend.onrender.com";
@@ -17,8 +18,12 @@ const Navbar = ({isAuthenticated, setIsAuthenticated}) => {
     useEffect(() => {
       const token = localStorage.getItem("token");
       if (token) {
+      const decoded = jwtDecode(token);
         const userName = localStorage.getItem("userName") || localStorage.getItem("name") ;
-        const userType = localStorage.getItem("userType");
+        // const userType = localStorage.getItem("userType");
+        const userType = decoded.type;
+        console.log(userType,"userType");
+        
         setUserRole(userType);
         setUser(userName);
         setIsAuthenticated(true);

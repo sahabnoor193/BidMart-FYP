@@ -81,7 +81,7 @@ function App() {
             <Route path="/otp-verification" element={<OtpVerification />} />
             <Route path="/seller-dashboard" element={isAuthenticated ? <SellerDashboard setIsAuthenticated={setIsAuthenticated}/> : <Navigate to="/signin" />} />
             <Route path="/buyer-dashboard" element={isAuthenticated ? <BuyerDashboard setIsAuthenticated={setIsAuthenticated}/> : <Navigate to="/signin" />} />
-            <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/signin"} />} />
+            <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/signin"} />} />
             <Route path='/add-product' element={<AddProduct/>} />
             <Route path="/dashboard/products" element={<SellerProducts />} />
             <Route path="/buyer/bids" element={<BuyerBids/>} />

@@ -98,14 +98,30 @@ const handleAcceptBid = async (bidId,productId,bidderEmail,bidderName) => {
           });
           setDisplayBids(false);
   } catch (error) {
-    console.error('Error accepting bid:', error);
-    toast.error('Failed to accept bid');
-    toast.update(toastId, {
-      render: `Failed to accept bid from ${bidderName}!`,
-      type: "error",
-      isLoading: false,
-      autoClose: 3000,
-    });
+     
+const message = error?.response?.data?.message || "Unknown error occurred";
+     console.log(message,"message");
+     
+    // Check for known Stripe capability error
+    const isStripeCapabilityError = message.includes("capabilities enabled");
+
+    if (isStripeCapabilityError) {
+      toast.update(toastId, {
+        render: `Seller's Stripe account isn't ready to receive payments. Ask them to complete onboarding.`,
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    } else {
+      toast.update(toastId, {
+        render: `Failed to accept bid from ${bidderName}!`,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+
+    console.error('Error accepting bid:', message);
   }
 }
   const handleEditProduct = (productId) => {

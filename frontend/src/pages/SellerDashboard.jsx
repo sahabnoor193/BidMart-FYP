@@ -4,6 +4,8 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 // Import the icons you need
 import { FaList, FaHistory, FaStar, FaExchangeAlt, FaTimes, FaPlus, FaEdit, FaTrash, FaSave, FaHeart } from 'react-icons/fa';
+import StripeOnboardingButton from '../components/StripeOnboardingButton';
+import { X } from 'lucide-react';
 
 const SellerDashboard = ({setIsAuthenticated}) => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -13,7 +15,7 @@ const SellerDashboard = ({setIsAuthenticated}) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const BASEURL = "http://localhost:5000";
-  
+  const [userHaveStripeAccount, setUserHaveStripeAccount] = useState(true);
   const [sellerData, setSellerData] = useState({
     activeBids: 0,
     endedBids: 0,
@@ -291,7 +293,25 @@ const SellerDashboard = ({setIsAuthenticated}) => {
       alert(err.response?.data?.message || 'Account switch failed');
     }
   };
-
+  const handleAddAccount = async () => {
+    try {
+      const userId = localStorage.getItem('id');
+    const response = await axios.post("http://localhost:5000/api/stripe/checkStripeAccount", {
+      userId: userId
+    })
+    console.log(response.data);
+    if(response.data.stripeAccountId === null){
+      setUserHaveStripeAccount(false);
+    }else{
+      navigate('/add-product')
+    }
+    
+// navigate('/add-product')
+  }catch (error) {
+    console.log(error, "error");
+    
+  }
+}
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     console.log('[Profile Update] Initiating profile update');
@@ -901,7 +921,7 @@ const SellerDashboard = ({setIsAuthenticated}) => {
           <button 
             className="bg-red-600 text-white p-2 rounded cursor-pointer"
             // onClick={() => setActiveTab("addProduct")}
-            onClick={() => navigate('/add-product')}
+            onClick={handleAddAccount}
           >
             Add product
           </button>
@@ -938,6 +958,25 @@ const SellerDashboard = ({setIsAuthenticated}) => {
         {activeTab === "profile" && renderAccountContent()}
         {activeTab === "alerts" && renderAlertsContent()}
         {activeTab === "chats" && renderChatsContent()}
+        {
+          !userHaveStripeAccount && (
+<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
+        <button
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+          onClick={()=>setUserHaveStripeAccount(true)}
+        >
+          <X/>
+        </button>
+         <h2 className="text-xl font-semibold mb-4">Connect with Stripe to Proceed</h2>
+        {/* <div>{children}</div> */}
+        <div className='flex items-center justify-center'>
+        <StripeOnboardingButton/>
+        </div>
+      </div>
+    </div>
+          )
+        }
       </div>
     </div>
   );
