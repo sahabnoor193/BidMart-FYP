@@ -224,7 +224,7 @@ const price = startBid + (startBid * (parseFloat(percentage) || 0) / 100);
           <button 
             className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleBidSubmit}
-            disabled={!price || parseFloat(price) <= startBid || sellerId === userId}
+            disabled={ !price || parseFloat(price) <= startBid || sellerId === userId || userType === "seller"}
           >
             {sellerId === userId ? 'Product Owner Cannot Bid': userType === "seller"? "Seller Can't Bid": 'Place Bid'}
           </button>

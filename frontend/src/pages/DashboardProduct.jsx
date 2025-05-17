@@ -136,8 +136,9 @@ const DashboardProduct = () => {
            
           // Check for known Stripe capability error
           const isStripeCapabilityError = message.includes("capabilities enabled");
-      
-          if (isStripeCapabilityError) {
+          const stripeError = message.includes("Stripe Error");
+          
+          if (isStripeCapabilityError || stripeError) {
             toast.update(toastId, {
               render: `Seller's Stripe account isn't ready to receive payments. Complete Stripe Process.`,
               type: "error",
