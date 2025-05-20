@@ -1,6 +1,6 @@
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-const User = require('../models/User'); // Assuming seller's Stripe ID is stored here
+const User = require('../models/User');
 
 exports.createCheckoutSession = async (req, res) => {
   const { product, buyerEmail, bidAmount, bidId, sellerId } = req.body;
@@ -14,18 +14,35 @@ exports.createCheckoutSession = async (req, res) => {
       return res.status(400).json({ error: 'Seller has no Stripe account linked' });
     }
 
+    // Retrieve and verify onboarding completion
+    const account = await stripe.accounts.retrieve(sellerStripeAccountId);
+
+    if (!account.charges_enabled || !account.details_submitted) {
+      return res.status(403).json({ error: 'Seller has not completed Stripe onboarding' });
+    }
+
+    // Generate and save login link if not already stored
+    if (!seller.stripeLoginLink) {
+      const loginLink = await stripe.accounts.createLoginLink(sellerStripeAccountId);
+
+      await User.findByIdAndUpdate(sellerId, {
+        stripeLoginLink: loginLink.url,
+      });
+    }
+
+    // Create the Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       customer_email: buyerEmail,
       line_items: [
         {
           price_data: {
-            currency: 'pkr',
+            currency: 'usd',
             product_data: {
               name: product.name,
               description: product.description,
             },
-            unit_amount: Math.round(bidAmount * 100), // e.g. $10.00 = 1000
+            unit_amount: Math.round(bidAmount * 100),
           },
           quantity: 1,
         },
@@ -38,16 +55,16 @@ exports.createCheckoutSession = async (req, res) => {
         sellerId,
       },
       payment_intent_data: {
-        application_fee_amount: 100, // platform fee in cents (optional)
+        application_fee_amount: 100,
         transfer_data: {
-          destination: sellerStripeAccountId, // send money to seller
+          destination: sellerStripeAccountId,
         },
       },
     });
 
     res.status(200).json({ url: session.url });
   } catch (error) {
-    console.error("Stripe session error:", error.message);
+    console.error('Stripe session error:', error.message);
     res.status(500).json({ error: error.message });
   }
 };

@@ -70,6 +70,7 @@ exports.getSellerDashboard = async (req, res) => {
 
     res.json({
       activeBids,
+      stripeLoginLink: user.stripeLoginLink || null,
       endedBids,
       favourites: user.favourites,
       bidHistory,

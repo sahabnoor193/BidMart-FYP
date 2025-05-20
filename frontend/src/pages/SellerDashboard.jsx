@@ -19,6 +19,7 @@ const SellerDashboard = ({setIsAuthenticated}) => {
   const [sellerData, setSellerData] = useState({
     activeBids: 0,
     endedBids: 0,
+    stripeLoginLink: null,
     favourites: 0,
     bidHistory: []
   });
@@ -913,6 +914,7 @@ const SellerDashboard = ({setIsAuthenticated}) => {
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "dashboard" ? "bg-white" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "profile" ? "bg-white" : ""}`} onClick={() => setActiveTab("profile")}>Manage My Account</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "alerts" ? "bg-white" : ""}`} onClick={() => setActiveTab("alerts")}>My Alerts</li>
+           { sellerData?.stripeLoginLink && <li> <a href={sellerData?.stripeLoginLink} target='_blank' className={`p-2 cursor-pointer rounded-lg mt-5 mb-4 `} >Stripe Login Link</a></li>} 
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "chats" ? "bg-white" : ""}`} onClick={() => setActiveTab("chats")}>My Chats</li>
             <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "logout" ? "bg-white" : ""}`} onClick={logout}>LogOut</li>
           </ul>

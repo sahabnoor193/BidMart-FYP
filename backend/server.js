@@ -82,6 +82,30 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     amount: bid.amount,
     status: 'completed' 
   });
+if (seller?.stripeAccountId) {
+  const account = await stripe.accounts.retrieve(seller.stripeAccountId);
+
+  if (account.capabilities?.transfers === 'active') {
+    try {
+      await stripe.transfers.create({
+        amount: Math.round(bid.amount * 100), // in cents
+        currency: 'usd', // Make sure this is supported by Stripe in your region
+        destination: seller.stripeAccountId,
+        description: `Payout for bid ${bid._id}`,
+      });
+      console.log(`✅ Transfer sent to seller ${seller._id}`);
+    } catch (transferError) {
+      console.error("❌ Transfer creation failed:", transferError.message);
+      // Optional: Notify seller or mark payout as pending
+    }
+  } else {
+    console.warn("⚠️ Seller account is not ready for transfers. Prompt to complete onboarding.");
+    // Optional: Notify seller to complete onboarding
+  }
+} else {
+  console.error("❌ Seller has no Stripe account connected.");
+}
+
         bid.status = 'Payment Success';
   bid.paymentId = payment._id;
   await bid.save();

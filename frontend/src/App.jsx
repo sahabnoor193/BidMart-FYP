@@ -28,6 +28,7 @@ import CancelPage from './pages/CancelPage';
 import SuccessPage from './pages/SuccessPage';
 import BuyerBids from './pages/BuyerBids';
 import SellerBids from './pages/SellerBids';
+import StripeCallback from './pages/StripeCallback';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -75,7 +76,7 @@ function App() {
             <Route path="/signup" element={<Signup setIsAuthenticated={setIsAuthenticated} />} />
             <Route path="/signin" element={<Signin setIsAuthenticated={setIsAuthenticated} />} />
             <Route path="/favouritebids" element={<FavouriteBids />} />
-
+<Route path="/stripe/callback" element={<StripeCallback />} />
             
             {/* <Route path="/product" element={<ProductPage />} /> */}
             <Route path="/otp-verification" element={<OtpVerification />} />

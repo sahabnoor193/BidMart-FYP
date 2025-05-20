@@ -15,6 +15,7 @@ const UserSchema = new mongoose.Schema({
   city: { type: String, default: undefined },
   address: { type: String, default: undefined },
   stripeAccountId : { type: String,default: null },
+  stripeLoginLink : { type: String,default: null },
   createdAt: { type: Date, default: Date.now },
   totalFavorites: { type: Number, default: 0 },
 
