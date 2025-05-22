@@ -184,20 +184,28 @@ exports.acceptBid = asyncHandler(async (req, res) => {
   bid.status = 'payment pending';
   product.status = 'pending';
 
+  let checkoutUrl;
 
+  try {
+    // 2. Create checkout session
+    const response = await axios.post('http://localhost:5000/api/payments/create-checkout-session', {
+      product: {
+        name: product.name,
+        description: product.description,
+      },
+      buyerEmail: bidderEmail,
+      bidAmount: bid.amount,
+      bidId: bidId,
+      sellerId: product.user
+    });
 
-  // 2. Create checkout session
-  const response = await axios.post('http://localhost:5000/api/payments/create-checkout-session', {
-    product: {
-      name: product.name,
-      description: product.description,
-    },
-    buyerEmail: bidderEmail,
-    bidAmount: bid.amount,
-    bidId: bidId
-  });
+    checkoutUrl = response.data.url;
+  } catch (err) {
+    const stripeError = err?.response?.data?.error || 'Checkout session creation failed';
+    res.status(500);
+    throw new Error(`Stripe Error: ${stripeError}`);
+  }
 
-  const checkoutUrl = response.data.url;
   await createAlertAndEmit({
     user: bid.bidderId,
     userType: "buyer",
@@ -205,13 +213,16 @@ exports.acceptBid = asyncHandler(async (req, res) => {
     productName: product.name,
     action: "bid-accepted"
   }, io);
+
   bid.checkoutUrl = checkoutUrl;
   await Promise.all([bid.save(), product.save()]);
+
   // 3. Send email to buyer
-  await sendCheckoutLinkEmail( bidderEmail, product.name, checkoutUrl );
+  await sendCheckoutLinkEmail(bidderEmail, product.name, checkoutUrl);
 
   res.json({ message: 'Checkout link sent to buyer.' });
 });
+
 // @desc    Update bid status (accept/reject)
 // @route   PUT /api/bids/:bidId/status
 // @access  Private (Seller only)

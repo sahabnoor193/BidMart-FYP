@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { X, Check, Info } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import StripeOnboardingButton from "../components/StripeOnboardingButton";
 const DashboardProduct = () => {
   // const BASEURL = "https://subhan-project-backend.onrender.com";
   const BASEURL = "http://localhost:5000";
@@ -14,7 +15,7 @@ const DashboardProduct = () => {
   const [updateState, setUpdateState] = useState(false);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [displayCompleteStripe, setDisplayCompleteStripe] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const openModal = () => setIsModalOpen(true);
@@ -130,14 +131,33 @@ const DashboardProduct = () => {
       });
       setDisplayBids(false);
     } catch (error) {
-      console.error('Error accepting bid:', error);
-      toast.error('Failed to accept bid');
-      toast.update(toastId, {
-        render: `Failed to accept bid from ${bidderName}!`,
-        type: "error",
-        isLoading: false,
-        autoClose: 3000,
-      });
+      const message = error?.response?.data?.message || "Unknown error occurred";
+          //  console.log(message,"message");
+           
+          // Check for known Stripe capability error
+          const isStripeCapabilityError = message.includes("capabilities enabled");
+          const stripeError = message.includes("Stripe Error");
+          
+          if (isStripeCapabilityError || stripeError) {
+            toast.update(toastId, {
+              render: `Seller's Stripe account isn't ready to receive payments. Complete Stripe Process.`,
+              type: "error",
+              isLoading: false,
+              autoClose: 5000,
+            });
+            setDisplayCompleteStripe(true);
+            setDisplayBids(false);
+          } else {
+            toast.update(toastId, {
+              render: `Failed to accept bid from ${bidderName}!`,
+              type: "error",
+              isLoading: false,
+              autoClose: 3000,
+            });
+          }
+      
+          console.error('Error accepting bid:', message);
+      
     }
   }
   const isPaymentPending = bids?.some(bid => bid.status === "payment pending");
@@ -173,6 +193,22 @@ const DashboardProduct = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl mt-10">
+      {displayCompleteStripe && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
+        <button
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+          onClick={() => setDisplayCompleteStripe(false)}
+        >
+          &times;
+        </button>
+        <h2 className="text-xl font-semibold mb-4">Complete Stripe Onboarding Process to Complete Payment Process!</h2>
+        <div className="flex justify-center items-center">
+        <StripeOnboardingButton/>
+        </div>
+      </div>
+    </div>
+      )}
       <div className="md:flex gap-10">
         {/* Image Gallery */}
         <div className="md:w-1/2 w-full">

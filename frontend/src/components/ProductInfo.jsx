@@ -17,7 +17,6 @@ const ProductInfo = ({
   sellerId,
   bidIncrease
 }) => {
-  // const BASEURL = "https://subhan-project-backend.onrender.com";
   const BASEURL = "http://localhost:5000";
   const [multiplier, setMultiplier] = useState(1); // 1x = 5%, 2x = 10%, etc.
 
@@ -225,7 +224,7 @@ const price = startBid + (startBid * (parseFloat(percentage) || 0) / 100);
           <button 
             className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleBidSubmit}
-            disabled={!price || parseFloat(price) <= startBid || sellerId === userId}
+            disabled={ !price || parseFloat(price) <= startBid || sellerId === userId || userType === "seller"}
           >
             {sellerId === userId ? 'Product Owner Cannot Bid': userType === "seller"? "Seller Can't Bid": 'Place Bid'}
           </button>

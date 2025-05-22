@@ -233,16 +233,51 @@ import Logo from '../assets/Logo.png';
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { jwtDecode } from 'jwt-decode';
 
 const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
   const BASEURL = "http://localhost:5000";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState("");
   const [userRole, setUserRole] = useState("");
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef();
-  const location = useLocation();
-  const isOnFavoritesPage = location.pathname === '/favouritebids';
+  
+    useEffect(() => {
+      const token = localStorage.getItem("token");
+      if (token) {
+      const decoded = jwtDecode(token);
+        const userName = localStorage.getItem("userName") || localStorage.getItem("name") ;
+        // const userType = localStorage.getItem("userType");
+        const userType = decoded.type;
+        console.log(userType,"userType");
+        
+        setUserRole(userType);
+        setUser(userName);
+        setIsAuthenticated(true);
+      }
+      else {
+        setUser(""); // Clear the user state
+        setUserRole(""); // Clear the user role state
+        setIsAuthenticated(false);
+      }
+    }, [isAuthenticated]);
+  
+    const [open, setOpen] = useState(false);
+    const menuRef = useRef();
+  
+    // Close the dropdown if clicked outside
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (menuRef.current && !menuRef.current.contains(event.target)) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, []);
+   // Get the current location
+   const location = useLocation();
 
   useEffect(() => {
     const token = localStorage.getItem("token");

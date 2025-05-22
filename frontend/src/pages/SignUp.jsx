@@ -338,6 +338,7 @@ const Signup = ({ setIsAuthenticated }) => {
         localStorage.setItem("email", formData.email);
         localStorage.setItem("name", formData.name);
         localStorage.setItem("type", formData.type);
+        localStorage.setItem("password", formData.password);
   
         navigate("/otp-verification");
       } else {
