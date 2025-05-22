@@ -20,7 +20,7 @@ const UserSchema = new mongoose.Schema({
   // ✅ New status field
   status: {
     type: String,
-    enum: ["active", "inactive", "suspended"],
+    enum: ["active", "inactive", "suspended","blocked"],
     default: "active"
   }
 });

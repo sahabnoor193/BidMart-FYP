@@ -18,16 +18,18 @@ exports.getSellerDashboard = async (req, res) => {
     const products = await Product.find({ user: req.user.id })
       .sort({ createdAt: -1 })
       .select('name startingPrice currentPrice status startDate endDate createdAt images category');
-const productIds = products.map(p => p._id);
+    const productIds = products.map(p => p._id);
 
- const soldedBids = await Bid.find({
+    const soldedBids = await Bid.find({
       productId: { $in: productIds },
       status: 'Payment Success'
-    }).select('productId');
+    }).select('productId amount');
     // console.log("Solded bids:", soldedBids);
-    
+    const soldPriceMap = new Map(
+      soldedBids.map(bid => [bid.productId.toString(), bid.amount])
+    );
     const soldedProductIds = new Set(soldedBids.map(bid => bid.productId.toString()));
-        const highestBids = await Bid.aggregate([
+    const highestBids = await Bid.aggregate([
       { $match: { productId: { $in: productIds } } },
       {
         $group: {
@@ -42,10 +44,10 @@ const productIds = products.map(p => p._id);
       highestBids.map(b => [b._id.toString(), b.maxBidAmount])
     );
     // Format products for bid history
-     const bidHistory = products.map(product => {
+    const bidHistory = products.map(product => {
       const productIdStr = product._id.toString();
       const highestBidAmount = highestBidMap.get(productIdStr);
-
+      const soldAmount = soldPriceMap.get(productIdStr);
       return {
         item: product.name,
         productId: product._id,
@@ -53,6 +55,7 @@ const productIds = products.map(p => p._id);
         currentPrice: highestBidAmount || product.currentPrice || product.startingPrice,
         bidTime: product.createdAt,
         status: product.status,
+        soldPrice: soldAmount || null,
         startDate: product.startDate,
         endDate: product.endDate,
         sold: product.status === 'sold' || soldedProductIds.has(productIdStr),

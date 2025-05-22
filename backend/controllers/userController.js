@@ -229,7 +229,7 @@ exports.getUserById = async (req, res) => {
 // Update user status
 exports.updateUserStatus = async (req, res) => {
   const { status } = req.body;
-  if (!["active", "inactive", "suspended"].includes(status)) {
+  if (!["active", "inactive", "suspended","blocked"].includes(status)) {
     return res.status(400).json({ message: "Invalid status value" });
   }
 
