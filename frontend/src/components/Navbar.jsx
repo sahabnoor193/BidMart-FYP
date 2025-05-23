@@ -278,6 +278,8 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
     }, []);
    // Get the current location
    const location = useLocation();
+   // Check if the current page is /favouritebids
+   const isOnFavoritesPage = location.pathname === '/favouritebids';
 
   useEffect(() => {
     const token = localStorage.getItem("token");
