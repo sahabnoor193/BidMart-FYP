@@ -190,18 +190,19 @@ const getUserProducts = asyncHandler(async (req, res) => {
 const getActiveProducts = asyncHandler(async (req, res) => {
   try {
     const now = new Date();
-    const utcNow = Date.UTC(
+    const utcNow = new Date(Date.UTC(
       now.getUTCFullYear(),
       now.getUTCMonth(),
       now.getUTCDate()
-    );
-    
-    console.log('[API] Fetching active products at:', new Date(utcNow).toISOString());
-    
+    ));
+
+    console.log('[API] Fetching active products at:', utcNow.toISOString());
+
     const products = await Product.find({ 
       $and: [
         { isDraft: false },
-        { status: 'active' }
+        { status: 'active' },
+        { endDate: { $gte: utcNow } }  // Filter for endDate today or later
       ]
     })
     .sort('-createdAt')
@@ -214,6 +215,8 @@ const getActiveProducts = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+
 
 
 const getAllProducts = async (req, res) => {

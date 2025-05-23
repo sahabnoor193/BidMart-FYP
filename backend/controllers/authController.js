@@ -146,86 +146,119 @@ exports.register = async (req, res) => {
   }
 };
 // Changes By Muneeb, Added userid and userName in response
+// exports.login = async (req, res) => {
+//   try {
+//     const { email, password, rememberMe } = req.body;
+
+//     console.log("🔹 Login request received:", email);
+
+//     // ✅ Find all accounts for this email
+//     const userAccounts = await User.find({ email });
+
+//     if (userAccounts.length === 0) {
+//       console.log("❌ User not found:", email);
+//       return res.status(400).json({ message: "Invalid email or password" });
+//     }
+
+
+//         // ✅ Check password against each account
+//         let matchedAccount = null;
+//         for (let account of userAccounts) {
+//           const isMatch = await bcrypt.compare(password, account.password);
+//           if (isMatch) {
+//             matchedAccount = account;
+//             break; // Stop checking once we find a valid password match
+//           }
+//         }
+//     if (!matchedAccount) {
+//       console.log("❌ Incorrect password for:", email);
+//       return res.status(400).json({ message: "Invalid email or password" });
+//     }
+//         // ✅ Generate JWT Token
+//         const token = jwt.sign(
+//           { id: matchedAccount.id, email: matchedAccount.email, type: matchedAccount.type },
+//           process.env.JWT_SECRET,
+//           { expiresIn: rememberMe ? '30d' : '1d' } // 30 days if "Remember Me" is checked, otherwise 1 day
+//         );
+//     // console.log("✅ User logged in:", email, "as", userType);
+//     // res.status(200).json({ message: "Login successful", token, type: userType, id: user.id,name: user.name });
+//     console.log("✅ User logged in:", email, "as", matchedAccount.type);
+//     res.status(200).json({
+//       message: "Login successful",
+//       token,
+//       type: matchedAccount.type,
+//       id: matchedAccount.id,
+//       name: matchedAccount.name,
+//     });
+//   } catch (error) {
+//     console.error("❌ Login Error:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+// Added By Muneeb
+
 exports.login = async (req, res) => {
   try {
     const { email, password, rememberMe } = req.body;
-
+   console.log(password,"password");
+   
     console.log("🔹 Login request received:", email);
 
-    // ✅ Find all accounts for this email
+    // ✅ Find all user accounts associated with the provided email
     const userAccounts = await User.find({ email });
 
     if (userAccounts.length === 0) {
-      console.log("❌ User not found:", email);
+      console.log("❌ No accounts found for email:", email);
       return res.status(400).json({ message: "Invalid email or password" });
     }
+     console.log(userAccounts,"userAccounts");
+     
+    // ✅ Try to match the provided password with any account's hashed password
+    const matchedAccount = await findMatchingAccount(userAccounts, password);
 
-    // // ✅ Check password against any valid user
-    // let user = null;
-    // for (let acc of userAccounts) {
-    //   const isMatch = await bcrypt.compare(password, acc.password);
-    //   if (isMatch) {
-    //     user = acc;
-    //     break; // Stop checking once we find a valid password match
-    //   }
-    // }
-        // ✅ Check password against each account
-        let matchedAccount = null;
-        for (let account of userAccounts) {
-          const isMatch = await bcrypt.compare(password, account.password);
-          if (isMatch) {
-            matchedAccount = account;
-            break; // Stop checking once we find a valid password match
-          }
-        }
-
-    // if (!user) {
-    //   console.log("❌ Incorrect password for:", email);
-    //   return res.status(400).json({ message: "Invalid email or password" });
-    // }
     if (!matchedAccount) {
-      console.log("❌ Incorrect password for:", email);
+      console.log("❌ Incorrect password for email:", email);
       return res.status(400).json({ message: "Invalid email or password" });
     }
-
-    // // ✅ Determine user type
-    // const hasBuyer = userAccounts.some((acc) => acc.type === "buyer");
-    // const hasSeller = userAccounts.some((acc) => acc.type === "seller");
-
-    // let userType = user.type; // Default to the type of the matched user
-    // if (hasBuyer && hasSeller) {
-    //   userType = "buyer"; // If both accounts exist, default to buyer
-    // }
 
     // ✅ Generate JWT Token
-    // Update token expiration based on remember me
-    // const token = jwt.sign(
-    //   { id: user.id, email: user.email, type: userType }, // Include email in the payload
-    //   process.env.JWT_SECRET,
-    //   { expiresIn: rememberMe ? '30d' : '1d' }, // 30 days if checked, 1 day if not
-    // );
-        // ✅ Generate JWT Token
-        const token = jwt.sign(
-          { id: matchedAccount.id, email: matchedAccount.email, type: matchedAccount.type },
-          process.env.JWT_SECRET,
-          { expiresIn: rememberMe ? '30d' : '1d' } // 30 days if "Remember Me" is checked, otherwise 1 day
-        );
-    // console.log("✅ User logged in:", email, "as", userType);
-    // res.status(200).json({ message: "Login successful", token, type: userType, id: user.id,name: user.name });
+    const token = jwt.sign(
+      {
+        id: matchedAccount._id, // Use _id instead of id (Mongoose convention)
+        email: matchedAccount.email,
+        type: matchedAccount.type,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: rememberMe ? '30d' : '1d' }
+    );
+
     console.log("✅ User logged in:", email, "as", matchedAccount.type);
-    res.status(200).json({
+
+    return res.status(200).json({
       message: "Login successful",
       token,
       type: matchedAccount.type,
-      id: matchedAccount.id,
+      id: matchedAccount._id,
       name: matchedAccount.name,
     });
+
   } catch (error) {
     console.error("❌ Login Error:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: "Server error during login" });
   }
 };
-// Added By Muneeb
+
+// ✅ Helper function to find the account that matches the password
+async function findMatchingAccount(accounts, password) {
+  for (let account of accounts) {
+    const isMatch = await bcrypt.compare(password, account.password);
+    console.log(isMatch,"isMatch");
+    
+    if (isMatch) return account;
+  }
+  return null;
+}
+
 exports.googleRegister = async (req, res) => {
   try {
     const { credential } = req.body;
@@ -300,7 +333,7 @@ exports.googleLogins = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id, type: user.type }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
@@ -457,7 +490,8 @@ exports.verifyOTP = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: `You are already verified as a ${type}. Please log in.` });
     }
-
+    console.log(password,"password in otp");
+    
     // ✅ Hash the password before saving
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);

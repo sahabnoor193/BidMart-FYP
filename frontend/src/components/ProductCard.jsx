@@ -104,17 +104,31 @@ const ProductCard = ({ product }) => {
             {product.name}
           </h3>
 
-          <div className="flex items-center justify-between mb-2">
-            <span className={`text-sm px-2 py-1 rounded-full ${
-              new Date(product.startDate) <= new Date() && new Date(product.endDate) >= new Date() 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              {new Date(product.startDate) <= new Date() && new Date(product.endDate) >= new Date()
-                ? 'Live Now'
-                : 'Ended'}
-            </span>
-          </div>
+<div className="flex items-center justify-between mb-2">
+  {(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const startDate = new Date(product.startDate);
+    const endDate = new Date(product.endDate);
+
+    const isLive =
+      startDate <= today && endDate >= today;
+
+    return (
+      <span
+        className={`text-sm px-2 py-1 rounded-full ${
+          isLive
+            ? 'bg-green-100 text-green-800'
+            : 'bg-gray-100 text-gray-800'
+        }`}
+      >
+        {isLive ? 'Live Now' : 'Ended'}
+      </span>
+    );
+  })()}
+</div>
+
 
           {/* Price and Heart */}
           <div className="flex items-center justify-between">
