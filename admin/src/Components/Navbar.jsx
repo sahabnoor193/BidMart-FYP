@@ -44,7 +44,7 @@ const Navbar = ({
           </div>
 
           {/* Desktop Menu */}
-          {/* <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden  items-center space-x-6">
             {menuItems.map((item) => (
               <Link 
                 key={item.path} 
@@ -54,7 +54,7 @@ const Navbar = ({
                 {item.label}
               </Link>
             ))}
-          </div> */}
+          </div>
 
           {/* Actions */}
           <div className="hidden  items-center space-x-1">
@@ -91,7 +91,7 @@ const Navbar = ({
           </div>
 
           {/* Hamburger Menu */}
-          <div className="hidden">
+          <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="text-black p-2 rounded-md focus:outline-none"
