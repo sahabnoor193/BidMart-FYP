@@ -44,24 +44,7 @@ const SellerBids = () => {
     fetchProducts();
   }, [navigate]);
 
-  const handleDelete = async (productId) => {
-    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone!')) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/products/${productId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        // Update both active and draft products lists
-        setProducts(products.filter(product => product._id !== productId));
-        setDraftProducts(draftProducts.filter(product => product._id !== productId));
-        toast.success('Product deleted successfully');
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        toast.error(error.response?.data?.message || 'Failed to delete product');
-      }
-    }
-  };
+
 const handleFetchBids = async (productId) => {
    setBidLoading(true);
   try {
@@ -124,9 +107,6 @@ const message = error?.response?.data?.message || "Unknown error occurred";
     console.error('Error accepting bid:', message);
   }
 }
-  const handleEditProduct = (productId) => {
-    navigate(`/dashboard/products/edit/${productId}`);
-  };
 
   const renderProductsTable = (productsList) => (
     <div className="overflow-x-auto">
@@ -301,30 +281,7 @@ const message = error?.response?.data?.message || "Unknown error occurred";
   ))}
 </div>
 
-      {/* Products Table */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        {/* <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-red-600">Your Products</h1>
-          <div className="flex space-x-4">
-            <button
-              onClick={() => setActiveTab('active')}
-              className={`px-4 py-2 rounded ${
-                activeTab === 'active' ? 'bg-red-600 text-white' : 'bg-gray-200'
-              }`}
-            >
-              Active Products
-            </button>
-            <button
-              onClick={() => setActiveTab('drafts')}
-              className={`px-4 py-2 rounded ${
-                activeTab === 'drafts' ? 'bg-red-600 text-white' : 'bg-gray-200'
-              }`}
-            >
-              Draft Products
-            </button>
-          </div>
-        </div> */}
-        
+      <div className="bg-white rounded-lg shadow-md p-6">        
         {loading ? (
           <div className="text-center py-4">Loading products...</div>
         ) : (

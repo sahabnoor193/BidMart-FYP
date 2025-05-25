@@ -111,7 +111,7 @@ const OtpVerification = () => {
     }
   };
 
-   const containerVariants = {
+  const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -141,14 +141,12 @@ const OtpVerification = () => {
       variants={containerVariants}
       className="min-h-screen bg-gradient-to-br from-[#e6f2f5] via-[#f0f8fa] to-[#faf6e9] font-serif flex items-center justify-center p-6 relative"
     >
-      <div className="max-w-6xl mx-auto">
-        {/* Updated Gradient Bar */}
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 0.8 }}
-          className="h-1 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] mb-8"
-        />
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 0.8, ease: "easeInOut" }}
+        className="h-2 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] absolute top-0 left-0 right-0"
+      />
 
       <motion.div 
         variants={itemVariants}
@@ -251,7 +249,6 @@ const OtpVerification = () => {
           </motion.div>
         )}
       </motion.div>
-      </div>
     </motion.div>
   );
 };
