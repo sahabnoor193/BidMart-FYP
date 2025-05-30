@@ -51,6 +51,122 @@ app.use(passport.session());
 
 
 // Webhook endpoint
+// app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+//   const sig = req.headers['stripe-signature'];
+//   let event;
+
+//   try {
+//     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+//   } catch (err) {
+//     console.error("Webhook Error:", err.message);
+//     return res.status(400).send(`Webhook Error: ${err.message}`);
+//   }
+
+//   const session = event.data.object;
+//   const bidId = session.metadata?.bidId;
+
+//   if (!bidId) {
+//     return res.status(400).send("Missing bidId in metadata.");
+//   }
+
+//   try {
+//     if (event.type === 'checkout.session.completed') {
+//       let bid = await Bid.findById(bidId);
+//       const productId = bid.productId;
+//       const product = await productModel.findById(productId);
+//       const buyerId = bid.bidderId;
+//       const buyer = await User.findById(buyerId);
+//       const seller = await User.findById(product.user);
+//        const payment = await Payment.create({
+//     bidId: bid._id,
+//     amount: bid.amount,
+//     status: 'completed' 
+//   });
+
+//         bid.status = 'Payment Success';
+//   bid.paymentId = payment._id;
+//   await bid.save();
+
+//       if (!bid) return res.status(404).send("Bid not found.");
+
+//       if (bid.productId) {
+//         await productModel.findByIdAndUpdate(bid.productId, { status: 'ended' });
+//       }
+//       if (bid.bidderId) {
+//         await User.findByIdAndUpdate(bid.bidderId, { $inc: { acceptedBids: 1 } });
+//       }
+//       if (buyer?._id) {
+//         await User.findByIdAndUpdate(buyer._id, { $inc: { acceptedBids: 1 } });
+//       }
+
+//       // Send emails
+//       if (buyer?.email) {
+//         await sendPaymentSuccessEmail(buyer.email, product.name, 'buyer', buyer.name);
+//       }
+//       if (seller?.email) {
+//         await sendPaymentSuccessEmail(seller.email, product.name, 'seller', seller.name);
+//       }
+
+//       if (buyer?._id) {
+//         await createAlertAndEmit({
+//           user: buyer._id,
+//           userType: 'buyer',
+//           product: product._id,
+//           productName: product.name,
+//           action: 'payment_success'
+//         }, io);
+//       }
+
+//       if (seller?._id) {
+//         await createAlertAndEmit({
+//           user: seller._id,
+//           userType: 'seller',
+//           product: product._id,
+//           productName: product.name,
+//           action: 'product_sold'
+//         }, io);
+//       }
+//       console.log(`✅ Bid ${bidId} paid. Product ended. Buyer updated.`);
+//     } 
+//     else if (event.type === 'checkout.session.expired') {
+//       const bid = await Bid.findByIdAndUpdate(
+//         bidId,
+//         { status: 'rejected' },
+//         { new: true }
+//       );
+
+//       if (!bid) return res.status(404).send("Bid not found.");
+
+//       if (bid.productId) {
+//         await productModel.findByIdAndUpdate(bid.productId, { status: 'active' });
+//         const product = await productModel.findById(bid.productId).populate('user');
+//         const seller = product?.user;
+
+//         if (seller?.email) {
+//           await sendBidRejectEmail(seller.email, product.name, seller.name);
+//         }
+//         if (seller?._id) {
+//           await createAlertAndEmit({
+//             user: seller._id,
+//             userType: 'seller',
+//             product: product._id,
+//             productName: product.name,
+//             action: 'payment_failed'
+//           }, io);
+//         }
+//       }
+
+//       console.log(`⛔ Bid ${bidId} expired. Product set to active.`);
+//     }
+
+//     res.status(200).json({ received: true });
+
+//   } catch (error) {
+//     console.error("Webhook processing error:", error);
+//     res.status(500).send("Server error.");
+//   }
+// });
+
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -64,7 +180,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
   const session = event.data.object;
   const bidId = session.metadata?.bidId;
-
+  console.log(bidId,"bidId");
+  
   if (!bidId) {
     return res.status(400).send("Missing bidId in metadata.");
   }
@@ -82,30 +199,10 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     amount: bid.amount,
     status: 'completed' 
   });
-if (seller?.stripeAccountId) {
-  const account = await stripe.accounts.retrieve(seller.stripeAccountId);
-
-  if (account.capabilities?.transfers === 'active') {
-    try {
-      await stripe.transfers.create({
-        amount: Math.round(bid.amount * 100), // in cents
-        currency: 'usd', // Make sure this is supported by Stripe in your region
-        destination: seller.stripeAccountId,
-        description: `Payout for bid ${bid._id}`,
-      });
-      console.log(`✅ Transfer sent to seller ${seller._id}`);
-    } catch (transferError) {
-      console.error("❌ Transfer creation failed:", transferError.message);
-      // Optional: Notify seller or mark payout as pending
-    }
-  } else {
-    console.warn("⚠️ Seller account is not ready for transfers. Prompt to complete onboarding.");
-    // Optional: Notify seller to complete onboarding
-  }
-} else {
-  console.error("❌ Seller has no Stripe account connected.");
-}
-
+  console.log(payment,"payment");
+  console.log(bid,"bid");
+  
+  
         bid.status = 'Payment Success';
   bid.paymentId = payment._id;
   await bid.save();

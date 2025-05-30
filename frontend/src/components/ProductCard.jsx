@@ -107,23 +107,24 @@ const ProductCard = ({ product }) => {
 <div className="flex items-center justify-between mb-2">
   {(() => {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
     const startDate = new Date(product.startDate);
     const endDate = new Date(product.endDate);
 
-    const isLive =
-      startDate <= today && endDate >= today;
+    let status, style;
+    if (now < startDate) {
+      status = 'Not Started';
+      style = 'bg-gray-100 text-gray-800';
+    } else if (now >= startDate || now <= endDate) {
+      status = 'Live Now';
+      style = 'bg-green-100 text-green-800';
+    } else {
+      status = 'Ended';
+      style = 'bg-gray-100 text-gray-800';
+    }
 
     return (
-      <span
-        className={`text-sm px-2 py-1 rounded-full ${
-          isLive
-            ? 'bg-green-100 text-green-800'
-            : 'bg-gray-100 text-gray-800'
-        }`}
-      >
-        {isLive ? 'Live Now' : 'Ended'}
+      <span className={`text-sm px-2 py-1 rounded-full ${style}`}>
+        {status}
       </span>
     );
   })()}
