@@ -336,6 +336,8 @@ const SignIn = ({ setIsAuthenticated }) => {
 
         const userData = { id: data.id,  _id: data.id, email, type: data.type, name: data.name };
         // localStorage.setItem("user", JSON.stringify(userData));
+        //Added userData for localstorage in signin
+        localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("userEmail", userData.email);
         localStorage.setItem("id", userData.id);
         localStorage.setItem("token", data.token);
