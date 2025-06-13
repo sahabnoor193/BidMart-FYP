@@ -29,6 +29,8 @@ import SuccessPage from './pages/SuccessPage';
 import BuyerBids from './pages/BuyerBids';
 import SellerBids from './pages/SellerBids';
 import StripeCallback from './pages/StripeCallback';
+import SearchResults from './pages/SearchResults';
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -94,6 +96,7 @@ function App() {
             <Route path="/feedback" element={<FeedbackForm />} />
             <Route path="/aboutus" element={<AboutUs />} />
             <Route path="/faq" element={<FAQPage />} />
+            <Route path="/search" element={<SearchResults />} />
           </Routes>
         </main>
         <Footer />

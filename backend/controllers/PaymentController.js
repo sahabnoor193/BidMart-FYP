@@ -6,7 +6,7 @@ exports.createCheckoutSession = async (req, res) => {
   const { product, buyerEmail, bidAmount, bidId, sellerId } = req.body;
 
   try {
-    // Fetch seller’s connected Stripe account ID
+    // Fetch seller's connected Stripe account ID
     const seller = await User.findById(sellerId);
     const sellerStripeAccountId = seller?.stripeAccountId;
 
@@ -37,7 +37,7 @@ exports.createCheckoutSession = async (req, res) => {
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: 'pkr',
             product_data: {
               name: product.name,
               description: product.description,

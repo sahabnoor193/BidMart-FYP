@@ -18,43 +18,71 @@ router.post('/onboard-seller', async (req, res) => {
   const { userId, email } = req.body;
 
   try {
+    // Validate required fields
+    if (!userId || !email) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        details: { userId: !userId, email: !email }
+      });
+    }
+
     let stripeAccountId = await getStripeAccountIdFromDB(userId);
 
     if (!stripeAccountId) {
       // Create new Express account
-      const account = await stripe.accounts.create({
-        type: 'express',
-        email,
-        capabilities: {
-          transfers: { requested: true },
-        },
-      });
+      try {
+        const account = await stripe.accounts.create({
+          type: 'express',
+          email,
+          capabilities: {
+            transfers: { requested: true },
+          },
+        });
 
-      stripeAccountId = account.id;
-      await saveStripeAccountIdToDB(userId, stripeAccountId);
+        stripeAccountId = account.id;
+        await saveStripeAccountIdToDB(userId, stripeAccountId);
+      } catch (stripeError) {
+        console.error('Stripe account creation error:', stripeError);
+        return res.status(500).json({ 
+          error: 'Failed to create Stripe account',
+          details: stripeError.message
+        });
+      }
     }
 
     // Retrieve account to check onboarding status
-    const account = await stripe.accounts.retrieve(stripeAccountId);
+    try {
+      const account = await stripe.accounts.retrieve(stripeAccountId);
 
-    if (account.charges_enabled && account.details_submitted) {
-      // Onboarding complete – return login link
-      const loginLink = await stripe.accounts.createLoginLink(stripeAccountId);
-      return res.json({ url: loginLink.url, status: 'onboarded' });
-    } else {
-      // Onboarding NOT complete – return onboarding link
-      const accountLink = await stripe.accountLinks.create({
-        account: stripeAccountId,
-        refresh_url: 'http://localhost:5173/stripe/refresh',
-        return_url: 'http://localhost:5173/seller-dashboard',
-        type: 'account_onboarding',
+      if (account.charges_enabled && account.details_submitted) {
+        // Onboarding complete – return login link
+        const loginLink = await stripe.accounts.createLoginLink(stripeAccountId);
+        return res.json({ url: loginLink.url, status: 'onboarded' });
+      } else {
+        // Onboarding NOT complete – return onboarding link
+        const accountLink = await stripe.accountLinks.create({
+          account: stripeAccountId,
+          refresh_url: 'http://localhost:5173/stripe/refresh',
+          return_url: 'http://localhost:5173/seller-dashboard',
+          type: 'account_onboarding',
+        });
+        return res.json({ url: accountLink.url, status: 'onboarding' });
+      }
+    } catch (stripeError) {
+      console.error('Stripe account retrieval error:', stripeError);
+      return res.status(500).json({ 
+        error: 'Failed to retrieve Stripe account',
+        details: stripeError.message
       });
-      return res.json({ url: accountLink.url, status: 'onboarding' });
     }
 
   } catch (err) {
-    console.error('Stripe onboarding error:', err.message);
-    res.status(500).json({ error: 'Stripe onboarding failed', details: err.message });
+    console.error('Stripe onboarding error:', err);
+    res.status(500).json({ 
+      error: 'Stripe onboarding failed',
+      details: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 

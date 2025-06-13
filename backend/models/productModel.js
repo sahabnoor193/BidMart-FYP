@@ -29,4 +29,10 @@ const productSchema = new mongoose.Schema({
   }
 });
 
+
+// Sania Updates
+productSchema.index({ name: 'text', description: 'text' });
+productSchema.index({ category: 1 });
+productSchema.index({ city: 1, country: 1 });
+
 module.exports = mongoose.model('Product', productSchema);

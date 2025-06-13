@@ -22,7 +22,7 @@ const FavouriteCards = ({ product }) => {
 
         {/* Price and Heart */}
         <div className="flex items-center justify-between">
-          <p className="text-red-500 font-bold text-lg">${product.price}</p>
+          <p className="text-red-500 font-bold text-lg">PKR {product.price}</p>
           <button className="p-2 rounded-full border border-gray-300 hover:bg-gray-100">
             {/* Heart Icon, filled with red */}
             <FiHeart className="w-5 h-5 text-red-500" />

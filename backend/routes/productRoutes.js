@@ -6,8 +6,11 @@ const { protect, checkRole } = require('../middleware/authMiddleware');
 const { upload, handleMulterError } = require('../config/multer');
 
 // Public routes
+// Add this to productRoutes.js
 router.get('/active', productController.getActiveProducts);
+// router.get('/search', productController.searchProducts);
 router.get('/similar/:productId', productController.getSimilarProducts);
+router.get('/search', productController.searchProducts);
 
 // Protected routes
 router.post('/', protect, upload.array('images', 5), handleMulterError, productController.createProduct);

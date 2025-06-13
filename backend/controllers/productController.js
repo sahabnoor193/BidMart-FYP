@@ -6,23 +6,24 @@ const User = require("../models/User");
 const Alert = require('../models/alertModel');
 const Bid = require("../models/Bid");
 const productModel = require("../models/productModel");
+
 // @desc    Create a new product (or draft)
 // @route   POST /api/products
 // @access  Private
 const createProduct = asyncHandler(async (req, res) => {
   try {
-    const { 
-      name, 
-      description, 
-      brand, 
-      quantity, 
+    const {
+      name,
+      description,
+      brand,
+      quantity,
       country,
-      city, 
-      startingPrice, 
-      bidQuantity, 
-      bidIncrease, 
-      category, 
-      startDate, 
+      city,
+      startingPrice,
+      bidQuantity,
+      bidIncrease,
+      category,
+      startDate,
       endDate,
       isDraft,
       images
@@ -33,9 +34,9 @@ const createProduct = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
     // Basic validation
-    if (!name || !description || !brand || !quantity || !country || !city || 
-        !startingPrice  || !category || 
-        !startDate || !endDate) {
+    if (!name || !description || !brand || !quantity || !country || !city ||
+      !startingPrice || !category ||
+      !startDate || !endDate) {
       console.log('Missing required fields:', {
         name: !!name,
         description: !!description,
@@ -89,7 +90,6 @@ const createProduct = asyncHandler(async (req, res) => {
       now.getUTCMonth(),
       now.getUTCDate()
     );
-
     // Only validate dates if not a draft
     if (!isDraft) {
       if (utcStart < utcNow) {
@@ -99,7 +99,6 @@ const createProduct = asyncHandler(async (req, res) => {
         throw new Error("End date must be after start date");
       }
     }
-
     // Create slug
     const originalSlug = slugify(name, { lower: true, strict: true });
     let slug = originalSlug;
@@ -109,7 +108,6 @@ const createProduct = asyncHandler(async (req, res) => {
       slug = `${originalSlug}-${suffix}`;
       suffix++;
     }
-
     // Create product
     const product = await Product.create({
       user: userId,
@@ -129,32 +127,32 @@ const createProduct = asyncHandler(async (req, res) => {
       status: isDraft ? 'draft' : 'active'
     });
 
-          // Replace both Alert.create calls with:
-          await Alert.create({
-            user: product.user,
-            userType: 'seller',
-            product: product._id,
-            productName: product.name,
-            action: isDraft ? 'draft' : 'added'
-          });
-    
-          await Alert.create({
-            user: userId,
-            userType: 'buyer',
-            product: product._id,
-            productName: product.name,
-           action: isDraft ? 'draft' : 'added'
-          });
+    // Replace both Alert.create calls with:
+    await Alert.create({
+      user: product.user,
+      userType: 'seller',
+      product: product._id,
+      productName: product.name,
+      action: isDraft ? 'draft' : 'added'
+    });
+
+    await Alert.create({
+      user: userId,
+      userType: 'buyer',
+      product: product._id,
+      productName: product.name,
+      action: isDraft ? 'draft' : 'added'
+    });
 
     console.log('Created product:', product);
-    
+
     // Only update activeBids if not a draft
     if (!isDraft) {
       const today = new Date();
       const productStartDate = new Date(product.startDate);
-      
+
       // Compare dates without time components
-      const isToday = 
+      const isToday =
         productStartDate.getFullYear() === today.getFullYear() &&
         productStartDate.getMonth() === today.getMonth() &&
         productStartDate.getDate() === today.getDate();
@@ -164,7 +162,7 @@ const createProduct = asyncHandler(async (req, res) => {
         console.log(`Updated activeBids for user ${userId}`);
       }
     }
-    
+
     res.status(201).json(product);
   } catch (error) {
     console.error('Error creating product:', error);
@@ -176,7 +174,7 @@ const createProduct = asyncHandler(async (req, res) => {
 // @route   GET /api/products/user/:userId
 // @access  Private
 const getUserProducts = asyncHandler(async (req, res) => {
-    const requestedUserId = req.params.userId;
+  const requestedUserId = req.params.userId;
   if (requestedUserId !== req.user._id.toString()) {
     return res.status(403).json({ message: "Unauthorized access" });
   }
@@ -198,15 +196,15 @@ const getActiveProducts = asyncHandler(async (req, res) => {
 
     console.log('[API] Fetching active products at:', utcNow.toISOString());
 
-    const products = await Product.find({ 
+    const products = await Product.find({
       $and: [
         { isDraft: false },
         { status: 'active' },
         { endDate: { $gte: utcNow } }  // Filter for endDate today or later
       ]
     })
-    .sort('-createdAt')
-    .select('name startingPrice currentPrice status startDate endDate isDraft category city country images');
+      .sort('-createdAt')
+      .select('name startingPrice currentPrice status startDate endDate isDraft category city country images');
 
     console.log('[API] Found products:', products.length);
     res.json(products);
@@ -269,9 +267,9 @@ const updateProductStatus = async (req, res) => {
 //       now.getUTCMonth(),
 //       now.getUTCDate()
 //     );
-    
+
 //     console.log('[API] Fetching active products at:', new Date(utcNow).toISOString());
-    
+
 //     const products = await Product.find({ 
 //       $and: [
 //         { startDate: { $lte: new Date(utcNow) } },
@@ -386,15 +384,28 @@ const updateProductStatus = async (req, res) => {
 
 // Added By Muneeb
 const getProductById = asyncHandler(async (req, res) => {
-  try {
+ try {
+    // Add this validation check at the start
+    // if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    //   return res.status(400).json({ 
+    //     message: "Invalid product ID format",
+    //     receivedId: req.params.id
+    //   });
+    // }
+    //   try {
+    console.log('[API] Fetching product with ID:', req.params.id);
+
     const product = await Product.findById(req.params.id)
-      .populate("user", "name email phone createdAt city")
+      .populate("user", "name email phone createdAt city _id")
       .lean();
 
     if (!product) {
+      console.error('[API] Product not found for ID:', req.params.id);
       res.status(404);
       throw new Error("Product not found");
     }
+
+    console.log('[API] Found product:', product);
 
     const seller = await User.findById(product.user._id);
     const yearsActive = new Date().getFullYear() - new Date(seller.createdAt).getFullYear();
@@ -450,7 +461,7 @@ const getProductById = asyncHandler(async (req, res) => {
         time: formatDate(product.user.createdAt),
         bids: await Product.countDocuments({ user: product.user._id, isDraft: false })
       },
-      
+
       contact: {
         name: product.user.name,
         email: product.user.email,
@@ -547,35 +558,35 @@ const deleteProduct = asyncHandler(async (req, res) => {
         endDate.getUTCDate()
       );
       if (utcStart <= utcNow && utcEnd >= utcNow) {
-        await User.findByIdAndUpdate(userId, { 
-          $inc: { activeBids: -1 } 
+        await User.findByIdAndUpdate(userId, {
+          $inc: { activeBids: -1 }
         });
       }
     }
 
-        // Replace both Alert.create calls with:
-              await Alert.create({
-                user: product.user,
-                userType: 'seller',
-                product: product._id,
-                productName: product.name,
-                action: 'deleted'
-              });
-        
-              await Alert.create({
-                user: userId,
-                userType: 'buyer',
-                product: product._id,
-                productName: product.name,
-                action: 'deleted'
-              });
-    
+    // Replace both Alert.create calls with:
+    await Alert.create({
+      user: product.user,
+      userType: 'seller',
+      product: product._id,
+      productName: product.name,
+      action: 'deleted'
+    });
+
+    await Alert.create({
+      user: userId,
+      userType: 'buyer',
+      product: product._id,
+      productName: product.name,
+      action: 'deleted'
+    });
+
 
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error("Error deleting product:", error);
-    res.status(500).json({ 
-      message: error.message || "Server error during product deletion" 
+    res.status(500).json({
+      message: error.message || "Server error during product deletion"
     });
   }
 });
@@ -629,8 +640,8 @@ const deleteProductForAdmin = asyncHandler(async (req, res) => {
         endDate.getUTCDate()
       );
       if (utcStart <= utcNow && utcEnd >= utcNow) {
-        await User.findByIdAndUpdate(product.user, { 
-          $inc: { activeBids: -1 } 
+        await User.findByIdAndUpdate(product.user, {
+          $inc: { activeBids: -1 }
         });
       }
     }
@@ -648,8 +659,8 @@ const deleteProductForAdmin = asyncHandler(async (req, res) => {
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error("Error deleting product:", error);
-    res.status(500).json({ 
-      message: error.message || "Server error during product deletion" 
+    res.status(500).json({
+      message: error.message || "Server error during product deletion"
     });
   }
 });
@@ -677,7 +688,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     if (updates.startDate || updates.endDate) {
       const startDate = new Date(updates.startDate || product.startDate);
       const endDate = new Date(updates.endDate || product.endDate);
-      
+
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(400).json({ message: "Invalid date format" });
       }
@@ -692,7 +703,7 @@ const updateProduct = asyncHandler(async (req, res) => {
         endDate.getUTCMonth(),
         endDate.getUTCDate()
       );
-      
+
       if (utcStart >= utcEnd) {
         return res.status(400).json({ message: "End date must be after start date" });
       }
@@ -722,7 +733,7 @@ const updateProduct = asyncHandler(async (req, res) => {
       if (!Array.isArray(updates.images)) {
         updates.images = [updates.images];
       }
-      
+
       // Filter out any non-string values
       updates.images = updates.images.filter(img => typeof img === 'string');
 
@@ -764,23 +775,23 @@ const updateProduct = asyncHandler(async (req, res) => {
     );
 
     // Create alert for product update
-            
-            await Alert.create({
-              user: product.user,
-              userType: 'seller',
-              product: product._id,
-              productName: product.name,
-              action: 'edited'
-            });
-      
-            await Alert.create({
-              user: userId,
-              userType: 'buyer',
-              product: product._id,
-              productName: product.name,
-              action: 'edited'
-            });
-    
+
+    await Alert.create({
+      user: product.user,
+      userType: 'seller',
+      product: product._id,
+      productName: product.name,
+      action: 'edited'
+    });
+
+    await Alert.create({
+      user: userId,
+      userType: 'buyer',
+      product: product._id,
+      productName: product.name,
+      action: 'edited'
+    });
+
 
     res.status(200).json(updatedProduct);
   } catch (error) {
@@ -795,7 +806,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 const getSimilarProducts = asyncHandler(async (req, res) => {
   try {
     const { productId } = req.params;
-    
+
     // Get the current product
     const currentProduct = await Product.findById(productId);
     if (!currentProduct) {
@@ -810,8 +821,8 @@ const getSimilarProducts = asyncHandler(async (req, res) => {
       country: currentProduct.country,
       status: 'active'
     })
-    .limit(4) // Limit to 4 similar products
-    .select('name startingPrice images category city country startDate endDate');
+      .limit(4) // Limit to 4 similar products
+      .select('name startingPrice images category city country startDate endDate');
 
     res.json(similarProducts);
   } catch (error) {
@@ -825,17 +836,214 @@ const getSimilarProducts = asyncHandler(async (req, res) => {
 // @access  Private
 const getDraftProducts = asyncHandler(async (req, res) => {
   try {
-    const products = await Product.find({ 
+    const products = await Product.find({
       user: req.user._id,
-      isDraft: true 
+      isDraft: true
     })
-    .sort('-createdAt')
-    .select('name startingPrice currentPrice status startDate endDate isDraft category city country images');
+      .sort('-createdAt')
+      .select('name startingPrice currentPrice status startDate endDate isDraft category city country images');
 
     res.json(products);
   } catch (error) {
     console.error('Error fetching draft products:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Add this new controller function
+// const searchProducts = asyncHandler(async (req, res) => {
+//   try {
+//     const { term, category, location } = req.query;
+
+//     // Build the search query
+//     const query = {
+//       status: 'active',
+//       isDraft: false
+//     };
+
+//     // Add text search
+//     if (term) {
+//       query.$or = [
+//         { name: { $regex: term, $options: 'i' } },
+//         { description: { $regex: term, $options: 'i' } }
+//       ];
+//     }
+
+//     // Add category filter
+//     if (category) {
+//       query.category = category;
+//     }
+
+//     // Add location search (city or country)
+//     if (location) {
+//       query.$or = [
+//         ...(query.$or || []),
+//         { city: { $regex: location, $options: 'i' } },
+//         { country: { $regex: location, $options: 'i' } }
+//       ];
+//     }
+
+//     const products = await Product.find(query)
+//       .select('name startingPrice currentPrice category city country images startDate endDate')
+//       .sort('-createdAt');
+
+//     res.json(products);
+//   } catch (error) {
+//     console.error('Search error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// productController.js
+// const searchProducts = asyncHandler(async (req, res) => {
+//   try {
+//     const { term, category, location } = req.query;
+    
+//     // Build the search query
+//     const query = { 
+//       status: 'active',
+//       isDraft: false 
+//     };
+
+//     // Text search condition
+//     if (term) {
+//       query.$or = [
+//         { name: { $regex: term, $options: 'i' } },
+//         { description: { $regex: term, $options: 'i' } }
+//       ];
+//     }
+
+//     // Category filter
+//     if (category) {
+//       query.category = category;
+//     }
+
+//     // Location search (city or country)
+//     if (location) {
+//       query.$or = [
+//         ...(query.$or || []), // Keep existing OR conditions
+//         { city: { $regex: location, $options: 'i' } },
+//         { country: { $regex: location, $options: 'i' } }
+//       ];
+//     }
+
+//     const products = await Product.find(query)
+//       .select('name startingPrice currentPrice category city country images startDate endDate')
+//       .sort('-createdAt');
+
+//     res.json(products);
+//   } catch (error) {
+//     console.error('Search error:', error);
+//     res.status(500).json({ 
+//       message: 'Server error',
+//       error: error.message // Include error message in response
+//     });
+//   }
+// });
+
+
+//updated by sania
+// const searchProducts = asyncHandler(async (req, res) => {
+//   try {
+//     const { term, category, location } = req.query;
+    
+//     // Build the search query
+//     const query = { 
+//       status: 'active',
+//       isDraft: false 
+//     };
+
+//     // Create separate arrays for conditions
+//     const conditions = [];
+    
+//     // Text search condition
+//     if (term) {
+//       conditions.push({
+//         $or: [
+//           { name: { $regex: term, $options: 'i' } },
+//           { description: { $regex: term, $options: 'i' } }
+//         ]
+//       });
+//     }
+
+//     // Location search condition
+//     if (location) {
+//       conditions.push({
+//         $or: [
+//           { city: { $regex: location, $options: 'i' } },
+//           { country: { $regex: location, $options: 'i' } }
+//         ]
+//       });
+//     }
+
+//     // Category filter
+//     if (category) {
+//       conditions.push({ category });
+//     }
+
+//     // Combine all conditions
+//     if (conditions.length > 0) {
+//       query.$and = conditions;
+//     }
+
+//     const products = await Product.find(query)
+//       .select('name startingPrice currentPrice category city country images startDate endDate')
+//       .sort('-createdAt');
+
+//     res.json(products);
+//   } catch (error) {
+//     console.error('Search error:', error);
+//     res.status(500).json({ 
+//       message: 'Server error',
+//       error: error.message
+//     });
+//   }
+// });
+
+
+const searchProducts = asyncHandler(async (req, res) => {
+  try {
+    const { term, category, location } = req.query;
+    
+    // Build base query
+    const query = { 
+      status: 'active',
+      isDraft: false 
+    };
+
+    // Text search condition (name OR description)
+    if (term) {
+      query.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { description: { $regex: term, $options: 'i' } }
+      ];
+    }
+
+    // Location search condition (city OR country)
+    if (location) {
+      query.$or = [
+        ...(query.$or || []),
+        { city: { $regex: location, $options: 'i' } },
+        { country: { $regex: location, $options: 'i' } }
+      ];
+    }
+
+    // Case-insensitive category matching
+    if (category) {
+      query.category = { $regex: new RegExp(`^${category}$`, 'i') };
+    }
+
+    const products = await Product.find(query)
+      .select('name startingPrice currentPrice category city country images startDate endDate')
+      .sort('-createdAt');
+
+    res.json(products);
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      error: error.message
+    });
   }
 });
 
@@ -851,5 +1059,6 @@ module.exports = {
   getAllProducts,
   getProductDetailById,
   updateProductStatus,
-  deleteProductForAdmin
+  deleteProductForAdmin,
+  searchProducts
 };

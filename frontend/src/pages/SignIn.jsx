@@ -1,35 +1,94 @@
-//import React, { useState } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaFacebook } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { FiMail, FiLock, FiUser } from "react-icons/fi";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
-
-import signinImage from "../assets/signup.jpeg";
-import { jwtDecode } from "jwt-decode"; // ✅ Correct// ✅ Install with: npm install jwt-decode
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
 import PropTypes from "prop-types";
-//import {jwtDecode} from "jwt-decode"; // ✅ Correct import
+import signinImage from "../assets/signup.jpeg";
 
 const SignIn = ({ setIsAuthenticated }) => {
-  // const BASEURL = "https://subhan-project-backend.onrender.com";
   const BASEURL = "http://localhost:5000";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [errors, setErrors] = useState({
+    email: '',
+    password: ''
+  });
   const navigate = useNavigate();
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+  // Animation configurations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        when: "beforeChildren"
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", stiffness: 120 }
+    }
+  };
+
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
+  // Email validation function
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    return emailRegex.test(email);
+  };
+
+  // Handle input changes with validation
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === 'email') {
+      setEmail(value);
+      if (!value) {
+        setErrors(prev => ({ ...prev, email: 'Email is required' }));
+      } else if (!validateEmail(value)) {
+        setErrors(prev => ({ ...prev, email: 'Please use a valid Gmail address' }));
+      } else {
+        setErrors(prev => ({ ...prev, email: '' }));
+      }
+    } else if (name === 'password') {
+      setPassword(value);
+      if (!value) {
+        setErrors(prev => ({ ...prev, password: 'Password is required' }));
+      } else {
+        setErrors(prev => ({ ...prev, password: '' }));
+      }
+    }
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     const toastId = toast.loading("Logging in...");
+
+    // Validate email before submission
+    if (!validateEmail(email)) {
+      toast.update(toastId, {
+        render: "Please use a valid Gmail address",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      setLoading(false);
+      return;
+    }
   
     try {
       const response = await fetch(`${BASEURL}/api/auth/login`, {
@@ -50,39 +109,42 @@ const SignIn = ({ setIsAuthenticated }) => {
           autoClose: 3000,
         });
   
-        // localStorage.setItem("token", data.token);
-        // localStorage.setItem("id", data.id);
-        // localStorage.setItem("userEmail", email);
-        // localStorage.setItem("userType", data.type);
-        // localStorage.setItem("userName", data.name);
-        // setIsAuthenticated(true);
-
-        const userData = { id: data.id,  _id: data.id, email, type: data.type, name: data.name };
-        // localStorage.setItem("user", JSON.stringify(userData));
+        const userData = { id: data.id, _id: data.id, email, type: data.type, name: data.name };
+        localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("userEmail", userData.email);
         localStorage.setItem("id", userData.id);
         localStorage.setItem("token", data.token);
-        localStorage.setItem("userName", data.name); // Add this line
+        localStorage.setItem("userName", data.name);
         localStorage.setItem("userType", data.type);
-  
-        // const decodedToken = jwtDecode(data.token);
-        // const userType = decodedToken.type || "buyer";
   
         setIsAuthenticated(true);
   
-        // Redirect based on user type
         if (data.type === "seller") {
           navigate("/seller-dashboard", { replace: true });
         } else {
           navigate("/buyer-dashboard", { replace: true });
         }
       } else {
-        toast.update(toastId, {
-          render: data.message || "Invalid email or password.",
-          type: "error",
-          isLoading: false,
-          autoClose: 3000,
-        });
+        // Check if the error is due to unregistered email
+        if (data.message === "User not found") {
+          toast.update(toastId, {
+            render: "This email is not registered. Please sign up first.",
+            type: "error",
+            isLoading: false,
+            autoClose: 3000,
+          });
+          // Optionally redirect to signup page
+          setTimeout(() => {
+            navigate("/signup");
+          }, 2000);
+        } else {
+          toast.update(toastId, {
+            render: data.message || "Invalid email or password.",
+            type: "error",
+            isLoading: false,
+            autoClose: 3000,
+          });
+        }
       }
     } catch (err) {
       console.error("❌ Error logging in:", err);
@@ -146,113 +208,200 @@ const SignIn = ({ setIsAuthenticated }) => {
       });
     }
   };
-  
   return (
-    <div className="min-h-screen bg-white flex flex-col md:flex-row">
-      {/* Left Section (Image) */}
-      <div className="md:w-1/2 hidden md:flex items-center justify-center">
-        <img
-          src={signinImage}
-          alt="SignIn Visual"
-          className="w-full h-auto object-contain max-h-[80vh]"
-        />
-      </div>
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="min-h-screen bg-gradient-to-br from-[#e6f2f5] via-[#f0f8fa] to-[#faf6e9] font-serif relative overflow-hidden"
+    >
+      {/* Decorative Gradient Bar */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 0.8, ease: "easeInOut" }}
+        className="h-2 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] absolute top-0 left-0 right-0"
+      />
 
-      {/* Right Section (Form) */}
-      <div className="w-full md:w-1/2 flex flex-col items-center justify-center py-8 px-4 md:px-16">
-        <div className="w-full max-w-md space-y-6">
-          <h2 className="text-3xl font-bold text-black text-center">Welcome Back</h2>
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-center min-h-screen p-8">
+        {/* Image Section */}
+        <motion.div
+          variants={itemVariants}
+          className="lg:w-1/2 flex justify-center mb-12 lg:mb-0 relative"
+        >
+          <div className="relative max-w-xl">
+            <motion.img
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              src={signinImage}
+              alt="SignIn Visual"
+              className="w-full h-auto rounded-[2rem] shadow-2xl border-4 border-white/30 transform rotate-2"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#016A6D]/10 to-transparent rounded-[2rem]" />
+          </div>
+        </motion.div>
 
-          {error && <p className="text-red-500 text-center">{error}</p>} {/* ✅ Show errors */}
+        {/* Form Section */}
+        <motion.div 
+          variants={itemVariants}
+          className="lg:w-1/2 flex justify-center z-10"
+        >
+          <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-[#016A6D]/10 relative overflow-hidden">
+            {/* Decorative Elements */}
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-[#FFAA5D]/10 rounded-full" />
+            <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-[#016A6D]/10 rounded-full" />
 
-          <form className="space-y-4" onSubmit={handleLogin}>
-            <div>
-              <label htmlFor="email" className="block text-gray-700 font-medium mb-1">Email:</label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Your Email"
-                className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">Password:</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Your Password"
-                  className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <span className="absolute inset-y-0 right-8 flex items-center text-gray-500 cursor-pointer"
-                  onClick={togglePasswordVisibility}>
-                  {showPassword ? <AiFillEyeInvisible size={20} /> : <AiFillEye size={20} />}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <input 
-                  type="checkbox" 
-                  id="remember" 
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <label htmlFor="remember" className="text-sm text-gray-600 select-none">
-                  Remember Me
-                </label>
-              </div>
-              <a href="#" className="text-sm text-blue-500 hover:underline">Forgot Password?</a>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition duration-300"
-              disabled={loading}
+            <motion.div
+              variants={itemVariants}
+              className="text-center mb-8"
             >
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
+              <motion.h2 
+                whileHover={{ scale: 1.02 }}
+                className="text-4xl font-bold text-[#043E52] mb-2 flex items-center justify-center gap-3"
+              >
+                <FiUser className="text-[#FFAA5D] p-2 bg-[#016A6D]/10 rounded-full" />
+                Welcome Back
+              </motion.h2>
+              <p className="text-[#043E52]/80">Sign in to continue your journey</p>
+            </motion.div>
 
-          <div className="flex items-center my-4">
-            <hr className="flex-grow border-t border-gray-300" />
-            <span className="px-4 text-sm text-gray-500">OR</span>
-            <hr className="flex-grow border-t border-gray-300" />
-          </div>
+            <form className="space-y-6" onSubmit={handleLogin}>
+              <motion.div variants={itemVariants}>
+                <div className="relative group">
+                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D] transition-colors" />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Your Email"
+                    className={`w-full pl-12 pr-4 py-3 rounded-xl border ${
+                      errors.email ? 'border-red-500' : 'border-[#016A6D]/20'
+                    } focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] bg-white/50 transition-all duration-300 hover:border-[#016A6D]/40`}
+                    value={email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                  )}
+                </div>
+              </motion.div>
 
-          {/* ✅ Social Login Buttons */}
-          <div className="flex justify-center space-x-4">
-            {/* <a href="http://localhost:5000/api/auth/facebook">
-              <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                <FaFacebook size={20} className="mr-2" /> Facebook
-              </button>
-            </a> */}
-            {/* <a href="http://localhost:5000/api/auth/google">
-              <button className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300">
-                <FaGoogle size={20} className="mr-2" /> Google
-              </button>
-            </a> */}
-            <GoogleOAuthProvider clientId="1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com">
-                <GoogleLogin onSuccess={(response) => googleLoginHandler(response)}
-                             onError={(error) => console.log(error)} />
+              <motion.div variants={itemVariants}>
+                <div className="relative group">
+                  <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D] transition-colors" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Your Password"
+                    className={`w-full pl-12 pr-12 py-3 rounded-xl border ${
+                      errors.password ? 'border-red-500' : 'border-[#016A6D]/20'
+                    } focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] bg-white/50 transition-all duration-300 hover:border-[#016A6D]/40`}
+                    value={password}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#043E52]/50 hover:text-[#FFAA5D] transition-colors"
+                  >
+                    {showPassword ? 
+                      <AiFillEyeInvisible size={22} /> : 
+                      <AiFillEye size={22} />}
+                  </button>
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                  )}
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="remember"
+                    className="w-5 h-5 accent-[#FFAA5D] rounded-lg border border-[#016A6D]/20 checked:border-[#FFAA5D]"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <label htmlFor="remember" className="text-[#043E52]/80">
+                    Remember Me
+                  </label>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  type="button"
+                  className="text-[#016A6D] hover:text-[#FFAA5D] transition-colors text-sm font-medium"
+                >
+                  Forgot Password?
+                </motion.button>
+              </motion.div>
+
+              <motion.button
+                variants={itemVariants}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                type="submit"
+                className="w-full bg-gradient-to-br from-[#FFAA5D] to-[#E16A3D] text-white py-3.5 rounded-xl font-medium hover:shadow-lg transition-all relative overflow-hidden group"
+                disabled={loading}
+              >
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-20 transition-opacity" />
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                    Signing In...
+                  </div>
+                ) : (
+                  <span className="tracking-wide">Sign In →</span>
+                )}
+              </motion.button>
+            </form>
+
+            <motion.div variants={itemVariants} className="my-8">
+              <div className="flex items-center">
+                <hr className="flex-grow border-t border-[#016A6D]/20" />
+                <span className="px-4 text-[#043E52]/60 text-sm font-medium">OR CONTINUE WITH</span>
+                <hr className="flex-grow border-t border-[#016A6D]/20" />
+              </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="flex justify-center">
+              <GoogleOAuthProvider clientId="1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com">
+                <GoogleLogin 
+                  onSuccess={(response) => googleLoginHandler(response)}
+                  onError={(error) => console.log(error)}
+                  theme="filled_blue"
+                  shape="pill"
+                  size="large"
+                  text="continue_with"
+                  width="300"
+                  logo_alignment="left"
+                  className="!rounded-xl !overflow-hidden hover:!shadow-md transition-shadow"
+                />
               </GoogleOAuthProvider>
-          </div>
+            </motion.div>
 
-          <p className="text-center text-sm text-gray-500 mt-4"> Dont have an account?{" "}
-            <a href="/signup" className="text-blue-500 hover:underline">Sign Up</a>
-          </p>
-        </div>
+            <motion.p 
+              variants={itemVariants}
+              className="text-center text-[#043E52]/80 mt-8"
+            >
+              New to our community?{" "}
+              <a 
+                href="/signup"
+                className="text-[#016A6D] hover:text-[#FFAA5D] font-medium transition-colors relative group"
+              >
+                Create Account
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#FFAA5D] scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+              </a>
+            </motion.p>
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
+
 SignIn.propTypes = {
   setIsAuthenticated: PropTypes.func.isRequired,
 };

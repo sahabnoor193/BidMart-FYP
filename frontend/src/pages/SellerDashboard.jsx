@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 // Import the icons you need
-import { FaList, FaHistory, FaStar, FaExchangeAlt, FaTimes, FaPlus, FaEdit, FaTrash, FaSave, FaHeart } from 'react-icons/fa';
+import {FaStar, FaExchangeAlt, FaTimes, FaPlus, FaEdit, FaTrash, FaSave, FaHeart, FaBell, FaHandshake, FaMoneyCheckAlt, FaStripe, FaTimesCircle } from 'react-icons/fa';
 import StripeOnboardingButton from '../components/StripeOnboardingButton';
 import { X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { FiBox, FiClock, FiDollarSign, FiStar, FiEye, FiMapPin, FiUser, FiMail, FiPhone, FiLock, FiMessageSquare, FiHome, FiBell, FiLogOut, FiPlus, FiList, FiArrowRight, FiX } from 'react-icons/fi';
 
 const SellerDashboard = ({setIsAuthenticated}) => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -33,7 +35,8 @@ const SellerDashboard = ({setIsAuthenticated}) => {
     email: '',
     address: '',
     phone: '',
-    city: ''
+    city: '',
+    country: ''
   });
   
   const [passwordData, setPasswordData] = useState({
@@ -67,6 +70,8 @@ const SellerDashboard = ({setIsAuthenticated}) => {
           'userEmail',
           'userName',
           'userType',
+          'country',
+          'city'
         ];
   
         keysToRemove.forEach((key) => {
@@ -252,10 +257,8 @@ const SellerDashboard = ({setIsAuthenticated}) => {
         console.log('[Switch Account] Switching to existing account');
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userType', response.data.userType);
-        localStorage.setItem("userName", response.data.user.name); // Add this line
-
-      // Replace the entire user object in localStorage
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem("userName", response.data.user.name);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
 
         window.location.href = `/${response.data.userType}-dashboard`;
       } else {
@@ -280,8 +283,13 @@ const SellerDashboard = ({setIsAuthenticated}) => {
             console.log('[Switch Account] New account created successfully');
             alert('Account created successfully. Please check your email for verification.');
   
-            handleLogout();
-  
+            // Store the necessary data in localStorage before navigation
+            localStorage.setItem("email", profile.email);
+            localStorage.setItem("name", profile.name);
+            localStorage.setItem("type", newType);
+            localStorage.setItem("password", 'defaultPassword123');
+
+            // Navigate to OTP verification without calling handleLogout
             navigate('/otp-verification', { state: { isSwitchVerification: true } });
           } else {
             console.error('[Switch Account] Failed to create new account');
@@ -409,50 +417,6 @@ const SellerDashboard = ({setIsAuthenticated}) => {
     }
   };
 
-  const getAlertIcon = (action) => {
-    switch (action) {
-      case 'added':
-        return <FaPlus className="text-green-500" />;
-      case 'edited':
-        return <FaEdit className="text-blue-500" />;
-      case 'deleted':
-        return <FaTrash className="text-red-500" />;
-      case 'draft':
-        return <FaSave className="text-yellow-500" />;
-      case 'favorited':
-        return <FaHeart className="text-pink-500" />;
-      case 'ended':
-        return <FaExchangeAlt className="text-orange-500" />;
-      default:
-        return <FaStar className="text-gray-500" />;
-    }
-  };
-
-  const getAlertMessage = (action, productName) => {
-    switch (action) {
-      case 'added':
-        return `New product "${productName}" has been added`;
-      case 'edited':
-        return `Product "${productName}" has been edited`;
-      case 'deleted':
-        return `Product "${productName}" has been deleted`;
-      case 'draft':
-        return `Product "${productName}" has been saved as draft`;
-        case 'product_sold':
-          return `Payment for "${productName}" has been successfull by the Buyer!`;
-      case 'favorited':
-        return `Product "${productName}" has been added to favorites`;
-      case 'ended':
-        return `Your product "${productName}" has ended`;
-        case 'bid-rejected':
-          return `Buyer have rejected to pay on "${productName}"! You can select any other buyer.`;
-      case 'new-bid':
-        return  `A new bid has been placed on your product "${productName}"`;
-      default:
-        return '';
-    }
-  };
-
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
@@ -485,503 +449,869 @@ const SellerDashboard = ({setIsAuthenticated}) => {
     }
   };
 
-  const renderDashboardContent = () => {
-    return (
-      <div className="rounded-lg p-6 shadow-md bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-gray-200 p-4 rounded-lg">
-            <div className="flex items-center">
-              <div className="mr-3">
-                <FaList className="text-gray-600" size={20} />
-              </div>
-              <div>
-                <h3 className="font-semibold">Active bids</h3>
-                <p className="text-2xl font-bold">{sellerData.activeBids}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-gray-200 p-4 rounded-lg">
-            <div className="flex items-center">
-              <div className="mr-3">
-                <FaHistory className="text-gray-600" size={20} />
-              </div>
-              <div>
-                <h3 className="font-semibold">Ended bids</h3>
-                <p className="text-2xl font-bold">{sellerData.endedBids}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-gray-200 p-4 rounded-lg">
-            <div className="flex items-center">
-              <div className="mr-3">
-                <FaStar className="text-gray-600" size={20} />
-              </div>
-              <div>
-                <h3 className="font-semibold">Favourites</h3>
-                <p className="text-2xl font-bold">{sellerData.favourites}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <h2 className="text-xl font-bold mb-4">Bid History</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2 px-4 text-left border">Items</th>
-                <th className="py-2 px-4 text-left border">Bid Start</th>
-                <th className="py-2 px-4 text-left border">Bid End</th>
-                <th className="py-2 px-4 text-left border">Time</th>
-                <th className="py-2 px-4 text-left border">Sell</th>
-                <th className="py-2 px-4 text-left border">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sellerData.bidHistory && sellerData.bidHistory.length > 0 ? (
-                sellerData.bidHistory.map((bid, index) => (
-                  <tr key={index} className="border-b">
-                    <td className="py-2 px-4 border"><Link to={`/dashboard/products/${bid.productId}`}>{bid.item}</Link></td>
-                    <td className="py-2 px-4 border">${bid.startPrice}</td>
-                    <td className="py-2 px-4 border">{bid.soldPrice && '$'}{bid.soldPrice || 'Active'}</td>
-                    <td className="py-2 px-4 border">{new Date(bid.bidTime).toLocaleString()}</td>
-                    <td className="py-2 px-4 border">{bid.sold ? 'Yes' : 'No'}</td>
-                    <td className="py-2 px-4 border"><Link to={`/dashboard/products/${bid.productId}`}>View</Link></td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="py-4 text-center text-gray-500 border">
-                    No bid history available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
-
-  const renderAccountContent = () => {
-    return (
-      <div className="rounded-lg p-6 shadow-md bg-white">
-        <h2 className="text-xl font-bold mb-6">Edit Your Profile</h2>
-        <form onSubmit={handleProfileUpdate} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="firstName" className="block text-gray-700 font-medium mb-1">First Name</label>
-              <input
-                type="text"
-                id="firstName"
-                value={userProfile.firstName}
-                onChange={(e) => setUserProfile({ ...userProfile, firstName: e.target.value })}
-                className="w-full border border-gray-300 rounded p-2"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="lastName" className="block text-gray-700 font-medium mb-1">Last Name</label>
-              <input
-                type="text"
-                id="lastName"
-                value={userProfile.lastName}
-                onChange={(e) => setUserProfile({ ...userProfile, lastName: e.target.value })}
-                className="w-full border border-gray-300 rounded p-2"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Email Field - Read Only */}
-            <div>
-              <label htmlFor="email" className="block text-gray-700 font-medium mb-1">Email</label>
-              <input
-                type="email"
-                id="email"
-                value={userProfile.email}
-                readOnly
-                className="w-full border border-gray-300 rounded p-2 bg-gray-100"
-                required
-              />
-            </div>
-            {/* Address Field */}
-            <div>
-              <label htmlFor="address" className="block text-gray-700 font-medium mb-1">Address</label>
-              <input
-                type="text"
-                id="address"
-                value={userProfile.address}
-                onChange={(e) => setUserProfile({ ...userProfile, address: e.target.value })}
-                className="w-full border border-gray-300 rounded p-2"
-              />
-            </div>
-          </div>
-
-          {/* Add Phone and City Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="phone" className="block text-gray-700 font-medium mb-1">Phone</label>
-              <input
-                type="number"
-                id="phone"
-                value={userProfile.phone}
-                onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })}
-                className="w-full border border-gray-300 rounded p-2"
-              />
-            </div>
-            <div>
-              <label htmlFor="city" className="block text-gray-700 font-medium mb-1">City</label>
-              <input
-                type="text"
-                id="city"
-                value={userProfile.city}
-                onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
-                className="w-full border border-gray-300 rounded p-2"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <button type="button" className="px-4 py-2 rounded">Cancel</button>
-            <button type="submit" className="bg-red-600 text-white px-4 py-2 rounded">Save Changes</button>
-          </div>
-        </form>
-
-        <h2 className="text-xl font-bold mb-6 mt-8">Change Password</h2>
-        <form onSubmit={handleChangePassword} className="space-y-4">
-          <div>
-            <label htmlFor="currentPassword" className="block text-gray-700 font-medium mb-1">Current Password</label>
-            <input
-              type="password"
-              id="currentPassword"
-              value={passwordData.currentPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-              className="w-full border border-gray-300 rounded p-2"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="newPassword" className="block text-gray-700 font-medium mb-1">New Password</label>
-            <input
-              type="password"
-              id="newPassword"
-              value={passwordData.newPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-              className="w-full border border-gray-300 rounded p-2"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="confirmNewPassword" className="block text-gray-700 font-medium mb-1">Confirm New Password</label>
-            <input
-              type="password"
-              id="confirmNewPassword"
-              value={passwordData.confirmNewPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, confirmNewPassword: e.target.value })}
-              className="w-full border border-gray-300 rounded p-2"
-              required
-            />
-          </div>
-          <div className="flex justify-end space-x-2">
-            <button type="button" className="px-4 py-2 rounded">Cancel</button>
-            <button type="submit" className="bg-red-600 text-white px-4 py-2 rounded">Change Password</button>
-          </div>
-        </form>
-      </div>
-    );
-  };
-
-  const renderAlertsContent = () => {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Alerts</h2>
-          {unreadAlerts > 0 && (
-            <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full">
-              {unreadAlerts} unread
-            </span>
-          )}
-        </div>
-        {alerts.length === 0 ? (
-          <div className="text-center py-8">
-            <FaStar className="text-gray-400 text-4xl mx-auto mb-4" />
-            <p className="text-gray-500">No alerts yet</p>
-          </div>
-        ) : (
-        <div className="space-y-4">
-            {alerts.map((alert) => (
-              <div
-                key={alert._id}
-                className={`p-4 rounded-lg border transition-all duration-200 ${
-                  !alert.read ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-3">
-                    <div className={`p-2 rounded-full ${
-                      !alert.read ? 'bg-red-100' : 'bg-gray-100'
-                    }`}>
-                      {getAlertIcon(alert.action)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-800">
-                        {getAlertMessage(alert.action, alert.productName)}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {formatDate(alert.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {!alert.read && (
-                      <button
-                        onClick={() => handleMarkAlertAsRead(alert._id)}
-                        className="text-sm text-red-600 hover:text-red-800 transition-colors"
-                      >
-                        Mark as read
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleRemoveAlert(alert._id)}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <FaTimes />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          )}
-      </div>
-    );
-  };
-
-  // Replace the existing useEffect for fetching conversations with:
-  useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user')); // Get user from localStorage
-        
-        if (!user || !user.id) {
-          console.error('User not found in local storage');
-          return;
-        }
-
-        const response = await axios.get(
-          `http://localhost:5000/api/conversations/${user._id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setConversations(response.data);
-      } catch (error) {
-        console.error('Error fetching conversations:', error);
-      }
-    };
-
-    if (activeTab === 'chats') {
-      fetchConversations();
+const renderDashboardContent = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, when: "beforeChildren" }
     }
-  }, [activeTab]); // Add activeTab to dependency array
-  
-  const renderChatsContent = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    console.log('User from localStorage:', JSON.parse(localStorage.getItem('user')));
+  };
 
-    const fetchMessages = async (conversationId) => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(
-          `http://localhost:5000/api/messages/${conversationId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setMessages(response.data);
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-      }
-    };
-  
-    const handleSendMessage = async (e) => {
-      e.preventDefault();
-      if (!newMessage.trim()) return;
-  
-      try {
-        const token = localStorage.getItem('token');
-        await axios.post('http://localhost:5000/api/messages', {
-          conversationId: selectedConversation,
-          senderId: user._id,
-          text: newMessage
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-  
-        setNewMessage('');
-        fetchMessages(selectedConversation);
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
-    };
-  
-    return (
-      <div className="rounded-lg p-6 shadow-md bg-white h-[600px] flex gap-4">
-        {/* Conversations List */}
-        <div className="w-1/3 border-r pr-4 overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4">Conversations</h2>
-          {conversations.map(conversation => (
-            <div
-              key={conversation._id}
-              onClick={() => {
-                setSelectedConversation(conversation._id);
-                fetchMessages(conversation._id);
-              }}
-              className={`p-3 cursor-pointer rounded-lg mb-2 ${
-                selectedConversation === conversation._id 
-                  ? 'bg-blue-50 border-blue-200' 
-                  : 'hover:bg-gray-50'
-              }`}
-            >
-              <div className="font-medium">
-                {conversation.participants
-                  .filter(p => p._id !== user._id)
-                  .map(p => p.name)
-                  .join(', ')}
-              </div>
-              <div className="text-sm text-gray-500 truncate">
-                {conversation.lastMessage}
-              </div>
-            </div>
-          ))}
-        </div>
-  
-        {/* Messages Area */}
-        <div className="flex-1 flex flex-col">
-          {selectedConversation ? (
-            <>
-              <div className="flex-1 overflow-y-auto mb-4">
-                {messages.map(message => (
-                  <div
-                    key={message._id}
-                    className={`mb-4 ${message.senderId === user._id ? 'text-right' : 'text-left'}`}
-                  >
-                    <div className={`inline-block p-2 rounded-lg ${
-                      message.senderId === user._id 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-200'
-                    }`}>
-                      {message.text}
-                      <div className="text-xs mt-1 opacity-70">
-                        {new Date(message.timestamp).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <form onSubmit={handleSendMessage} className="mt-auto">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-1 border rounded-lg p-2"
-                    placeholder="Type your message..."
-                  />
-                  <button
-                    type="submit"
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                  >
-                    Send
-                  </button>
-                </div>
-              </form>
-            </>
-          ) : (
-            <div className="text-gray-500 flex-1 flex items-center justify-center">
-              Select a conversation to start chatting
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", stiffness: 120 }
+    }
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="w-full md:w-1/4 p-5 bg-gray-100">
-        <div className="bg-gray-200 p-5 rounded-lg">
-          <ul className="space-y-2">
-            <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "dashboard" ? "bg-white" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</li>
-            <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "profile" ? "bg-white" : ""}`} onClick={() => setActiveTab("profile")}>Manage My Account</li>
-            <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "alerts" ? "bg-white" : ""}`} onClick={() => setActiveTab("alerts")}>My Alerts</li>
-           { sellerData?.stripeLoginLink && <li> <a href={sellerData?.stripeLoginLink} target='_blank' className={`p-2 cursor-pointer rounded-lg mt-5 mb-4 `} >Stripe Login Link</a></li>} 
-            <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "chats" ? "bg-white" : ""}`} onClick={() => setActiveTab("chats")}>My Chats</li>
-            <li className={`p-2 cursor-pointer rounded-lg ${activeTab === "logout" ? "bg-white" : ""}`} onClick={logout}>LogOut</li>
-          </ul>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button 
-            className="bg-red-600 text-white p-2 rounded cursor-pointer"
-            // onClick={() => setActiveTab("addProduct")}
-            onClick={handleAddAccount}
-          >
-            Add product
-          </button>
-          <button 
-            className="bg-red-600 text-white p-2 rounded cursor-pointer"
-            onClick={() => navigate('/dashboard/products')}
-          >
-            Show Products
-          </button>
-        </div>
-        <div className='mt-1'>
-           <Link to={'/seller/bids'} className='mt-2 bg-black text-white p-2 rounded cursor-pointer w-full flex items-center justify-center'>See Bids</Link>
-        </div>
-        {/* Add the new Switch Role button */}
-        <div className="mt-4">
-          <button 
-            className="bg-blue-600 text-white p-2 rounded cursor-pointer w-full flex items-center justify-center"
-            onClick={handleSwitchUserType}
-          >
-            <FaExchangeAlt className="mr-2" />
-            Switch to {userType === 'seller' ? 'Buyer' : 'Seller'} Role
-          </button>
-        </div>
-      </div>
-      
-      {/* Content */}
-      <div className="flex-1 p-5">
-        <div className="mb-6">
-          <div className="text-red-600 font-bold text-lg">
-            Home / DashBoard
-          </div>
-        </div>
-        {activeTab === "dashboard" && renderDashboardContent()}
-        {activeTab === "profile" && renderAccountContent()}
-        {activeTab === "alerts" && renderAlertsContent()}
-        {activeTab === "chats" && renderChatsContent()}
-        {
-          !userHaveStripeAccount && (
-<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
-        <button
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
-          onClick={()=>setUserHaveStripeAccount(true)}
+    <div className="min-h-screen bg-gradient-to-b from-[#e6f2f5] to-white font-serif">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.8 }}
+          className="h-1 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] mb-8"
+        />
+
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="rounded-lg p-6 shadow-xl bg-white/90 backdrop-blur-lg border border-[#016A6D]/20"
         >
-          <X/>
-        </button>
-         <h2 className="text-xl font-semibold mb-4">Connect with Stripe to Proceed</h2>
-        {/* <div>{children}</div> */}
-        <div className='flex items-center justify-center'>
-        <StripeOnboardingButton/>
-        </div>
-      </div>
-    </div>
-          )
-        }
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <motion.div 
+              variants={itemVariants}
+              whileHover={{ y: -5 }}
+              className="p-4 bg-gradient-to-br from-[#043E52]/5 to-white rounded-xl shadow-sm"
+            >
+              <div className="flex items-center">
+                <div className="p-3 bg-[#FFAA5D] text-white rounded-lg mr-4">
+                  <FiBox className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#043E52]">Active Bids</h3>
+                  <p className="text-2xl font-bold text-[#016A6D]">{sellerData.activeBids}</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              variants={itemVariants}
+              whileHover={{ y: -5 }}
+              className="p-4 bg-gradient-to-br from-[#043E52]/5 to-white rounded-xl shadow-sm"
+            >
+              <div className="flex items-center">
+                <div className="p-3 bg-[#016A6D] text-white rounded-lg mr-4">
+                  <FiClock className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#043E52]">Ended Bids</h3>
+                  <p className="text-2xl font-bold text-[#016A6D]">{sellerData.endedBids}</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              variants={itemVariants}
+              whileHover={{ y: -5 }}
+              className="p-4 bg-gradient-to-br from-[#043E52]/5 to-white rounded-xl shadow-sm"
+            >
+              <div className="flex items-center">
+                <div className="p-3 bg-[#E16A3D] text-white rounded-lg mr-4">
+                  <FiStar className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#043E52]">Favorites</h3>
+                  <p className="text-2xl font-bold text-[#016A6D]">{sellerData.favourites}</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          <motion.div variants={itemVariants}>
+            <h2 className="text-2xl font-bold text-[#043E52] border-b border-[#016A6D]/20 pb-2 mb-6">
+              Bid History
+            </h2>
+            
+            <div className="overflow-x-auto rounded-lg border border-[#016A6D]/20">
+              <table className="w-full">
+                <thead className="bg-[#043E52]/5">
+                  <tr>
+                    {['Items', 'Bid Start', 'Bid End', 'Date', 'Status', 'Action'].map((header, index) => (
+                      <th 
+                        key={index}
+                        className="py-3 px-4 text-left text-[#043E52] font-semibold"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                
+                <tbody className="divide-y divide-[#016A6D]/20">
+                  {sellerData.bidHistory?.length > 0 ? (
+                    sellerData.bidHistory.map((bid, index) => (
+                      <motion.tr 
+                        key={index}
+                        variants={itemVariants}
+                        className="hover:bg-[#016A6D]/5 transition-colors"
+                      >
+                        <td className="py-3 px-4 text-[#016A6D] font-medium">
+                          <Link 
+                            to={`/dashboard/products/${bid.productId}`}
+                            className="hover:text-[#FFAA5D] transition-colors"
+                          >
+                            {bid.item}
+                          </Link>
+                        </td>
+                        <td className="py-3 px-4 text-[#016A6D] font-medium">
+                          <div className="flex items-center gap-2">
+                            PKR {bid.startPrice}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {bid.soldPrice ? (
+                            <div className="flex items-center gap-2 text-[#016A6D] font-medium">
+                              PKR {bid.soldPrice}
+                            </div>
+                          ) : (
+                            <span className="inline-block px-2 py-1 rounded-lg bg-[#FFAA5D]/10 text-[#E16A3D]">Active</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-[#043E52]/80">
+                          {new Date(bid.bidTime).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-lg ${
+                            bid.sold 
+                              ? 'bg-[#016A6D]/10 text-[#016A6D]' 
+                              : 'bg-[#FFAA5D]/10 text-[#E16A3D]'
+                          }`}>
+                            {bid.sold ? 'Sold' : 'Active'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Link
+                            to={`/dashboard/products/${bid.productId}`}
+                            className="flex items-center gap-2 text-[#016A6D] hover:text-[#FFAA5D] transition-colors"
+                          >
+                            <FiEye className="w-5 h-5" />
+                            View
+                          </Link>
+                        </td>
+                      </motion.tr>
+                    ))
+                  ) : (
+                    <motion.tr variants={itemVariants}>
+                      <td colSpan="6" className="py-6 text-center text-[#043E52]/50 border">
+                        No bid history available
+                      </td>
+                    </motion.tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );
 };
 
+  const renderAccountContent = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, when: "beforeChildren" }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", stiffness: 120 }
+    }
+  };
+
+  return (
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="rounded-xl shadow-xl bg-white/90 backdrop-blur-lg border border-[#016A6D]/20 p-8"
+    >
+      {/* Profile Section */}
+      <motion.div variants={itemVariants} className="space-y-8">
+        <h2 className="text-2xl font-bold text-[#043E52] border-b border-[#016A6D]/20 pb-3">
+          Edit Profile
+        </h2>
+        
+        <form onSubmit={handleProfileUpdate} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="relative group">
+              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+              <input
+                type="text"
+                id="firstName"
+                value={userProfile.firstName}
+                onChange={(e) => setUserProfile({ ...userProfile, firstName: e.target.value })}
+                placeholder="First Name"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+                required
+              />
+            </div>
+
+            <div className="relative group">
+              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+              <input
+                type="text"
+                id="lastName"
+                value={userProfile.lastName}
+                onChange={(e) => setUserProfile({ ...userProfile, lastName: e.target.value })}
+                placeholder="Last Name"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+              />
+            </div>
+
+            <div className="relative group md:col-span-2">
+              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50" />
+              <input
+                type="email"
+                id="email"
+                value={userProfile.email}
+                readOnly
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 bg-[#016A6D]/5 cursor-not-allowed"
+              />
+            </div>
+
+            <div className="relative group md:col-span-2">
+              <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+              <input
+                type="text"
+                id="address"
+                value={userProfile.address}
+                onChange={(e) => setUserProfile({ ...userProfile, address: e.target.value })}
+                placeholder="Address"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+              />
+            </div>
+
+            <div className="relative group">
+              <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+              <input
+                type="tel"
+                id="phone"
+                value={userProfile.phone}
+                onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })}
+                placeholder="Phone Number"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+              />
+            </div>
+
+            <div className="relative group">
+              <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+              <input
+                type="text"
+                id="city"
+                value={userProfile.city}
+                onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
+                placeholder="City"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+              />
+            </div>
+            <div className="relative group">
+              <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+              <input
+                type="text"
+                id="country"
+                value={userProfile.country}
+                onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
+                placeholder="Country"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4 pt-4">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2.5 text-[#016A6D] hover:text-[#FFAA5D] transition-colors"
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              type="submit"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2.5 bg-gradient-to-r from-[#FFAA5D] to-[#E16A3D] text-white rounded-xl hover:shadow-lg transition-all"
+            >
+              Save Changes
+            </motion.button>
+          </div>
+        </form>
+      </motion.div>
+
+      {/* Password Section */}
+      <motion.div variants={itemVariants} className="pt-8 border-t border-[#016A6D]/20">
+        <h2 className="text-2xl font-bold text-[#043E52] mb-6">Change Password</h2>
+        
+        <form onSubmit={handleChangePassword} className="space-y-6">
+          <div className="space-y-4">
+            <div className="relative group">
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+              <input
+                type="password"
+                id="currentPassword"
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                placeholder="Current Password"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+                required
+              />
+            </div>
+
+            <div className="relative group">
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+              <input
+                type="password"
+                id="newPassword"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                placeholder="New Password"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+                required
+              />
+            </div>
+
+            <div className="relative group">
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+              <input
+                type="password"
+                id="confirmNewPassword"
+                value={passwordData.confirmNewPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, confirmNewPassword: e.target.value })}
+                placeholder="Confirm New Password"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4 pt-4">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2.5 text-[#016A6D] hover:text-[#FFAA5D] transition-colors"
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              type="submit"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2.5 bg-gradient-to-r from-[#FFAA5D] to-[#E16A3D] text-white rounded-xl hover:shadow-lg transition-all"
+            >
+              Change Password
+            </motion.button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+ const getAlertIcon = (action) => {
+  switch (action) {
+    case 'added':
+      return <FaPlus className="text-[#016A6D]" />;
+    case 'edited':
+      return <FaEdit className="text-[#043E52]" />;
+    case 'deleted':
+      return <FaTrash className="text-[#E16A3D]" />;
+    case 'draft':
+      return <FaSave className="text-[#FFAA5D]" />;
+    case 'favorited':
+      return <FaHeart className="text-[#E16A3D]" />;
+    case 'ended':
+      return <FaExchangeAlt className="text-[#043E52]" />;
+    case 'product_sold':
+      return <FaMoneyCheckAlt className="text-[#016A6D]" />;
+    case 'bid-rejected':
+      return <FaTimesCircle className="text-[#E16A3D]" />;
+    case 'new-bid':
+      return <FaHandshake className="text-[#016A6D]" />;
+    default:
+      return <FaStar className="text-[#043E52]/80" />;
+  }
+};
+
+const getAlertMessage = (action, productName) => {
+  switch (action) {
+    case 'added':
+      return `New product "${productName}" has been added`;
+    case 'edited':
+      return `Product "${productName}" has been updated`;
+    case 'deleted':
+      return `Product "${productName}" has been removed`;
+    case 'draft':
+      return `Draft saved for "${productName}"`;
+    case 'product_sold':
+      return `Payment received for "${productName}"!`;
+    case 'favorited':
+      return `"${productName}" added to favorites`;
+    case 'ended':
+      return `Auction ended for "${productName}"`;
+    case 'bid-rejected':
+      return `Payment declined for "${productName}"`;
+    case 'new-bid':
+      return `New bid received for "${productName}"`;
+    default:
+      return 'New activity on your account';
+  }
+};
+
+const renderAlertsContent = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, when: "beforeChildren" }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", stiffness: 120 }
+    }
+  };
+
+  return (
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="rounded-xl shadow-xl bg-white/90 backdrop-blur-lg border border-[#016A6D]/20 p-8"
+    >
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-2xl font-bold text-[#043E52] flex items-center gap-2">
+          <FaBell className="text-[#FFAA5D]" />
+          Activity Alerts
+        </h2>
+        {unreadAlerts > 0 && (
+          <span className="bg-[#E16A3D] text-white text-sm px-3 py-1 rounded-full">
+            {unreadAlerts} new
+          </span>
+        )}
+      </div>
+
+      {alerts.length === 0 ? (
+        <motion.div 
+          variants={itemVariants}
+          className="text-center py-12"
+        >
+          <FaBell className="text-[#043E52]/30 text-4xl mx-auto mb-4" />
+          <p className="text-[#043E52]/60">No recent activity</p>
+        </motion.div>
+      ) : (
+        <div className="space-y-4">
+          {alerts.map((alert) => (
+            <motion.div
+              key={alert._id}
+              variants={itemVariants}
+              className={`p-4 rounded-xl border ${
+                !alert.read 
+                  ? 'bg-[#FFAA5D]/10 border-[#FFAA5D]/30' 
+                  : 'bg-[#016A6D]/5 border-[#016A6D]/20'
+              } transition-all duration-200 group`}
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                  {getAlertIcon(alert.action)}
+                </div>
+                
+                <div className="flex-1">
+                  <p className="font-medium text-[#043E52]">
+                    {getAlertMessage(alert.action, alert.productName)}
+                  </p>
+                  <p className="text-sm text-[#043E52]/60 mt-1">
+                    {new Date(alert.createdAt).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {!alert.read && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleMarkAlertAsRead(alert._id)}
+                      className="text-sm text-[#016A6D] hover:text-[#FFAA5D] transition-colors"
+                    >
+                      Mark read
+                    </motion.button>
+                  )}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleRemoveAlert(alert._id)}
+                    className="text-[#043E52]/30 hover:text-[#E16A3D] transition-colors"
+                  >
+                    <FaTimes className="w-5 h-5" />
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+useEffect(() => {
+  const fetchConversations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user'));
+      
+      if (!user?._id) {
+        console.error('User not found in local storage');
+        return;
+      }
+
+      const response = await axios.get(
+        `http://localhost:5000/api/conversations/${user._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setConversations(response.data);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    }
+  };
+
+  if (activeTab === 'chats') {
+    fetchConversations();
+  }
+}, [activeTab]);
+
+const renderChatsContent = () => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
+  const fetchMessages = async (conversationId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `http://localhost:5000/api/messages/${conversationId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessages(response.data);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:5000/api/messages', {
+        conversationId: selectedConversation,
+        senderId: user._id,
+        text: newMessage
+      }, { headers: { Authorization: `Bearer ${token}` } });
+
+      setNewMessage('');
+      fetchMessages(selectedConversation);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  return (
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="rounded-xl shadow-xl bg-white/90 backdrop-blur-lg border border-[#016A6D]/20 h-[600px] flex gap-6 p-6"
+    >
+      {/* Conversations List */}
+      <div className="w-1/3 border-r border-[#016A6D]/20 pr-4 overflow-y-auto">
+        <h2 className="text-2xl font-bold text-[#043E52] mb-6 flex items-center gap-2">
+          <FiMessageSquare className="text-[#FFAA5D]" />
+          Conversations
+        </h2>
+        {conversations.map(conversation => (
+          <motion.div
+            key={conversation._id}
+            variants={itemVariants}
+            className={`p-4 cursor-pointer rounded-xl mb-3 transition-all ${
+              selectedConversation === conversation._id
+                ? 'bg-[#016A6D]/10 border-2 border-[#016A6D]/20'
+                : 'hover:bg-[#043E52]/5 border border-transparent'
+            }`}
+            onClick={() => {
+              setSelectedConversation(conversation._id);
+              fetchMessages(conversation._id);
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#016A6D]/10 rounded-full flex items-center justify-center">
+                <FiUser className="text-[#016A6D]" />
+              </div>
+              <div>
+                <h3 className="font-medium text-[#043E52]">
+                  {conversation.participants
+                    .filter(p => p._id !== user._id)
+                    .map(p => p.name)
+                    .join(', ')}
+                </h3>
+                <p className="text-sm text-[#043E52]/60 truncate">
+                  {conversation.lastMessage || 'Start a conversation'}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Messages Area */}
+      <div className="flex-1 flex flex-col">
+        {selectedConversation ? (
+          <>
+            <motion.div 
+              className="flex-1 overflow-y-auto mb-6 space-y-4"
+              variants={containerVariants}
+            >
+              {messages.map(message => (
+                <motion.div
+                  key={message._id}
+                  variants={itemVariants}
+                  className={`flex ${message.senderId === user._id ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[70%] p-4 rounded-2xl ${
+                      message.senderId === user._id
+                        ? 'bg-gradient-to-br from-[#FFAA5D] to-[#E16A3D] text-white'
+                        : 'bg-[#016A6D]/10 text-[#043E52]'
+                    }`}
+                  >
+                    <p className="mb-1">{message.text}</p>
+                    <p className={`text-xs ${
+                      message.senderId === user._id 
+                        ? 'text-white/70' 
+                        : 'text-[#043E52]/60'
+                    }`}>
+                      {new Date(message.timestamp).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <form onSubmit={handleSendMessage} className="mt-auto">
+              <div className="flex gap-3">
+                <div className="relative flex-1 group">
+                  <FiMessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D]" />
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D]"
+                  />
+                </div>
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-3 bg-gradient-to-br from-[#FFAA5D] to-[#E16A3D] text-white rounded-xl hover:shadow-lg transition-all"
+                >
+                  Send
+                </motion.button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-[#043E52]/60">
+            <FiMessageSquare className="text-4xl mb-4" />
+            <p>Select a conversation to start chatting</p>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+return (
+  <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-[#e6f2f5] to-white font-serif">
+    {/* Sidebar */}
+    <div className="w-full md:w-1/4 p-6 bg-white/90 backdrop-blur-lg border-r border-[#016A6D]/20">
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="space-y-3"
+      >
+        <div className="rounded-xl bg-[#016A6D]/5 p-4 border border-[#016A6D]/20">
+          <ul className="space-y-2">
+            {[
+              { tab: "dashboard", label: "Dashboard", icon: <FiHome /> },
+              { tab: "profile", label: "Manage Account", icon: <FiUser /> },
+              { tab: "alerts", label: "My Alerts", icon: <FiBell /> },
+              { tab: "chats", label: "My Chats", icon: <FiMessageSquare /> },
+              sellerData?.stripeLoginLink && { 
+                tab: "stripe", 
+                label: "Stripe Dashboard", 
+                icon: <FaStripe className="text-[#635bff]" />
+              },
+              { tab: "logout", label: "Logout", icon: <FiLogOut /> }
+            ].filter(Boolean).map((item) => (
+              <motion.li
+                key={item.tab}
+                whileHover={{ scale: 1.02 }}
+                className={`p-3 cursor-pointer rounded-xl flex items-center gap-3 transition-all ${
+                  activeTab === item.tab 
+                    ? 'bg-gradient-to-r from-[#FFAA5D]/10 to-[#E16A3D]/10 text-[#043E52] border border-[#016A6D]/20'
+                    : 'hover:bg-[#016A6D]/5'
+                }`}
+                onClick={item.tab === "logout" ? logout : item.tab === "stripe" ? null : () => setActiveTab(item.tab)}
+              >
+                <span className="text-[#FFAA5D]">{item.icon}</span>
+                {item.tab === "stripe" ? (
+                  <a href={sellerData.stripeLoginLink} target="_blank" rel="noopener noreferrer" className="w-full">
+                    {item.label}
+                  </a>
+                ) : (
+                  item.label
+                )}
+              </motion.li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="space-y-2 mt-4">
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#FFAA5D] to-[#E16A3D] text-white rounded-xl hover:shadow-lg transition-all"
+            onClick={handleAddAccount}
+          >
+            <FiPlus />
+            Add Product
+          </motion.button>
+
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#016A6D] to-[#043E52] text-white rounded-xl hover:shadow-lg transition-all"
+            onClick={() => navigate('/dashboard/products')}
+          >
+            <FiList />
+            Show Products
+          </motion.button>
+
+          <Link 
+            to="/seller/bids"
+            className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#043E52] to-[#016A6D] text-white rounded-xl hover:shadow-lg transition-all"
+          >
+            <FaHandshake />
+            See Bids
+          </Link>
+
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#016A6D] to-[#FFAA5D] text-white rounded-xl hover:shadow-lg transition-all"
+            onClick={handleSwitchUserType}
+          >
+            <FaExchangeAlt />
+            Switch to {userType === 'seller' ? 'Buyer' : 'Seller'}
+          </motion.button>
+        </div>
+      </motion.div>
+    </div>
+
+    {/* Content Area */}
+    <div className="flex-1 p-6">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="mb-8"
+      >
+        <nav className="flex items-center text-[#043E52]/80 space-x-2">
+          <motion.div
+            className="bg-[#E16A3D] w-2 h-4 mr-2 rounded-full"
+          />
+          <button 
+            onClick={() => navigate('/Home')} 
+            className="hover:text-[#FFAA5D] transition-colors"
+          >
+            Home
+          </button>
+          <FiArrowRight className="text-[#FFAA5D]" />
+          <span className="font-medium text-[#043E52]">Dashboard</span>
+        </nav>
+      </motion.div>
+
+      {activeTab === "dashboard" && renderDashboardContent()}
+      {activeTab === "profile" && renderAccountContent()}
+      {activeTab === "alerts" && renderAlertsContent()}
+      {activeTab === "chats" && renderChatsContent()}
+
+      {!userHaveStripeAccount && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+        >
+          <div className="bg-white/90 rounded-2xl shadow-xl max-w-lg p-8 border border-[#016A6D]/20 relative">
+            <button
+              className="absolute top-4 right-4 text-[#043E52]/50 hover:text-[#E16A3D] transition-colors"
+              onClick={() => setUserHaveStripeAccount(true)}
+            >
+              <FiX className="w-6 h-6" />
+            </button>
+            <h2 className="text-2xl font-semibold text-[#043E52] mb-6">Connect with Stripe</h2>
+            <div className="flex items-center justify-center">
+              <StripeOnboardingButton className="bg-[#635bff] hover:bg-[#7a73ff] text-white px-6 py-3 rounded-xl transition-colors" />
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  </div>
+);
+};
 export default SellerDashboard;

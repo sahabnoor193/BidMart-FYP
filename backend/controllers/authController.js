@@ -6,96 +6,34 @@ const Verification = require("../models/Verification");
 const {OAuth2Client} = require("google-auth-library");
 const { sendOTPEmail } = require("../services/emailService"); // Import email service
 
-// exports.register = async (req, res) => {
-//   try {
-//     console.log("🔹 Received Registration Request:", req.body);
+// Email validation function
+const validateEmail = (email) => {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+  return emailRegex.test(email);
+};
 
-//     const { name, email, password, type } = req.body;
+// Password validation function with detailed feedback
+const validatePassword = (password) => {
+  const requirements = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[@$!%*?&]/.test(password)
+  };
 
-//     // ✅ Validate Email Format
-//     if (!email.endsWith("@gmail.com")) {
-//       console.log("❌ Invalid Email: ", email);
-//       return res.status(400).json({ message: "Only Google emails (@gmail.com) are allowed." });
-//     }
+  const missing = [];
+  if (!requirements.length) missing.push("at least 8 characters");
+  if (!requirements.uppercase) missing.push("an uppercase letter");
+  if (!requirements.lowercase) missing.push("a lowercase letter");
+  if (!requirements.number) missing.push("a number");
+  if (!requirements.special) missing.push("a special character (@$!%*?&)");
 
-//     const UserModel = type === "buyer" ? Buyer : Seller;
-
-//     // ✅ Check if Email Already Exists
-//     let existingUser = await UserModel.findOne({ email });
-//     if (existingUser) {
-//       console.log("❌ User Already Exists:", email);
-//       return res.status(400).json({ message: "User already exists. Please log in." });
-//     }
-
-//     // ✅ Generate Verification Token
-//     const verificationToken = crypto.randomBytes(32).toString("hex");
-//     console.log("✅ Generated Token:", verificationToken);
-
-//     // ✅ Save verification entry with type
-//     await Verification.create({ email, token: verificationToken, type });
-
-//     console.log("📧 Sending Email to:", email);
-//     await sendVerificationEmail(email, verificationToken);
-
-//     res.status(201).json({ message: "Verification email sent. Please check your inbox." });
-//   } catch (error) {
-//     console.error("❌ Registration Error:", error);
-//     res.status(500).json({ error: "Server Error: " + error.message });
-//   }
-// };
-
-//for using unique email and type
-// exports.register = async (req, res) => {
-//   try {
-//     console.log("🔹 Received Registration Request:", req.body);
-
-//     const { name, email, password, type } = req.body;
-
-//     if (!name || !email || !password || !type) {
-//       return res.status(400).json({ message: "All fields are required" });
-//     }
-
-//     // ✅ Validate Email Format
-//     if (!email.endsWith("@gmail.com")) {
-//       return res.status(400).json({ message: "Only Google emails (@gmail.com) are allowed." });
-//     }
-
-//     // const UserModel = type === "buyer" ? Buyer : Seller;
-//     const UserModel = User; // Use the single User model
-
-//     // ✅ Check if Email Already Exists
-//     let existingUser = await UserModel.findOne({ email });
-//     if (existingUser) {
-//       return res.status(400).json({ message: "User already exists. Please log in." });
-//     }
-
-//     // ✅ Generate New OTP
-//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-//     console.log("✅ Generated OTP:", otp);
-
-//     // ✅ Check if OTP already exists for this user
-//     let verificationEntry = await Verification.findOne({ email });
-
-//     if (verificationEntry) {
-//       // ✅ Update existing OTP and reset expiration time
-//       verificationEntry.otp = otp;
-//       verificationEntry.createdAt = new Date(); // Reset expiration time
-//       await verificationEntry.save();
-//     } else {
-//       // ✅ Save New OTP in Verification Collection
-//       await Verification.create({ email, otp, type });
-//     }
-
-//     // ✅ Send OTP via Email
-//     console.log("📧 Sending OTP to:", email);
-//     await sendOTPEmail(email, otp); // Call email service to send OTP
-
-//     res.status(201).json({ message: "OTP sent. Please check your email." });
-//   } catch (error) {
-//     console.error("❌ Registration Error:", error);
-//     res.status(500).json({ error: "Server Error: " + error.message });
-//   }
-// };
+  return {
+    isValid: Object.values(requirements).every(Boolean),
+    missing
+  };
+};
 
 exports.register = async (req, res) => {
   try {
@@ -107,16 +45,29 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // ✅ Validate Email Format
-    if (!email.endsWith("@gmail.com")) {
-      return res.status(400).json({ message: "Only Google emails (@gmail.com) are allowed." });
+    // Validate email format
+    if (!validateEmail(email)) {
+      return res.status(400).json({ 
+        message: "Invalid email format. Please use a valid Gmail address." 
+      });
     }
 
-    // ✅ Check if the user has already registered with the same email and type
-    let existingUser = await User.findOne({ email, type });
-
+    // Check if email is already registered
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: `You have already registered as a ${type}. Please log in.` });
+      return res.status(400).json({ 
+        message: "This email is already registered. Please use a different email or try logging in.",
+        isRegistered: true
+      });
+    }
+
+    // Validate password strength with detailed feedback
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({ 
+        message: "Password is missing: " + passwordValidation.missing.join(", "),
+        missingRequirements: passwordValidation.missing
+      });
     }
 
     // ✅ Generate New OTP
@@ -145,7 +96,9 @@ exports.register = async (req, res) => {
     res.status(500).json({ error: "Server Error: " + error.message });
   }
 };
+
 // Changes By Muneeb, Added userid and userName in response
+
 // exports.login = async (req, res) => {
 //   try {
 //     const { email, password, rememberMe } = req.body;
@@ -195,6 +148,7 @@ exports.register = async (req, res) => {
 //     res.status(500).json({ error: error.message });
 //   }
 // };
+
 // Added By Muneeb
 
 exports.login = async (req, res) => {

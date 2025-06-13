@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Alert = require('../models/alertModel');
 console.log('[Alert Model] Is Model:', Alert.modelName === 'Alert'); 
+
 // // @desc    Get seller's alerts
 // // @route   GET /api/seller/alerts
 // // @access  Private
@@ -103,7 +104,7 @@ const getAlerts = asyncHandler(async (req, res) => {
     console.error('Alert fetch error:', error);
     res.status(500).json({ message: error.message });
   }
-});
+}); //alert is not updating in db 
 const createAlertAndEmit = async ({ user, userType, product, productName, action }, io) => {
   try {
     const alert = await Alert.create({
@@ -120,6 +121,7 @@ const createAlertAndEmit = async ({ user, userType, product, productName, action
     console.error('Error creating/emitting alert:', error);
   }
 };
+
 const markAlertAsRead = asyncHandler(async (req, res) => {
   try {
     const alert = await Alert.findOneAndUpdate(

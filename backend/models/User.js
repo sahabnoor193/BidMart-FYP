@@ -13,6 +13,7 @@ const UserSchema = new mongoose.Schema({
   favourites: { type: Number, default: 0 },
   phone: { type: Number, default: undefined },
   city: { type: String, default: undefined },
+  country: { type: String, default: undefined },
   address: { type: String, default: undefined },
   stripeAccountId : { type: String,default: null },
   stripeLoginLink : { type: String,default: null },

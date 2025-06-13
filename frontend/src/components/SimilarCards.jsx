@@ -28,7 +28,7 @@ const SimilarCards = ({ product }) => {
 
         {/* Price and Heart */}
         <div className="flex items-center justify-between">
-          <p className="text-red-500 font-bold text-lg">${product.price}</p>
+          <p className="text-red-500 font-bold text-lg">PKR {product.price}</p>
           <button 
             className="p-2 rounded-full border border-gray-300 hover:bg-gray-100"
             onClick={toggleFavorite} // Toggle favorite on click

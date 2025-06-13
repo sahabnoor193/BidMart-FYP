@@ -133,7 +133,7 @@ const ProductCard = ({ product }) => {
 
           {/* Price and Heart */}
           <div className="flex items-center justify-between">
-            <p className="text-red-500 font-bold text-lg">${product.startingPrice}</p>
+            <p className="text-red-500 font-bold text-lg">PKR {product.startingPrice}</p>
             <button
               className={`p-2 rounded-full border border-gray-300 hover:bg-gray-100 ${
                 isLoading ? 'opacity-50 cursor-not-allowed' : ''

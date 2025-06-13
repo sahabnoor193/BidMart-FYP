@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import { FiKey, FiClock, FiArrowRight } from "react-icons/fi";
 
 const OtpVerification = () => {
   const [otp, setOtp] = useState("");
@@ -22,12 +24,12 @@ const OtpVerification = () => {
     }
   }, [timer]);
 
-  // ✅ Function to Format Time (MM:SS)
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
-  };
+  // // ✅ Function to Format Time (MM:SS)
+  // const formatTime = (seconds) => {
+  //   const minutes = Math.floor(seconds / 60);
+  //   const secs = seconds % 60;
+  //   return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
+  // };
 
   // ✅ Function to Verify OTP
   const [name, setName] = useState(localStorage.getItem("name") || ""); // Retrieve name from localStorage
@@ -109,56 +111,145 @@ const OtpVerification = () => {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, when: "beforeChildren" }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", stiffness: 120 }
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-gray-700">Verify Your OTP</h2>
-        <p className="text-gray-500 text-center mb-4">Enter the OTP sent to your email.</p>
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="min-h-screen bg-gradient-to-br from-[#e6f2f5] via-[#f0f8fa] to-[#faf6e9] font-serif flex items-center justify-center p-6 relative"
+    >
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 0.8, ease: "easeInOut" }}
+        className="h-2 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] absolute top-0 left-0 right-0"
+      />
 
-        {error && <p className="text-red-500 text-center">{error}</p>}
-        {resendMessage && <p className="text-green-500 text-center">{resendMessage}</p>}
+      <motion.div 
+        variants={itemVariants}
+        className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-[#016A6D]/10 relative overflow-hidden"
+      >
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-[#FFAA5D]/10 rounded-full" />
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-[#016A6D]/10 rounded-full" />
 
-        {/* ✅ Countdown Timer */}
-        <p className="text-gray-600 text-center mb-2">
-          OTP expires in: <span className="font-semibold">{formatTime(timer)}</span>
-        </p>
+        <motion.div
+          variants={itemVariants}
+          className="text-center mb-8"
+        >
+          <motion.h2 
+            whileHover={{ scale: 1.02 }}
+            className="text-4xl font-bold text-[#043E52] mb-2 flex items-center justify-center gap-3"
+          >
+            <FiKey className="text-[#FFAA5D] p-2 bg-[#016A6D]/10 rounded-full" />
+            Verify OTP
+          </motion.h2>
+          <p className="text-[#043E52]/80">Enter the code sent to {email}</p>
+        </motion.div>
 
-        <form onSubmit={handleVerifyOTP} className="space-y-4">
-          <div>
-            <label htmlFor="otp" className="block text-gray-700 font-medium mb-1">OTP Code:</label>
-            <input
-              type="text"
-              id="otp"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter OTP"
-              className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+        <form onSubmit={handleVerifyOTP} className="space-y-6">
+          <motion.div variants={itemVariants}>
+            <div className="relative group">
+              <FiKey className="absolute left-4 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D] transition-colors" />
+              <input
+                type="text"
+                id="otp"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="Enter 6-digit code"
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] bg-white/50 transition-all duration-300 hover:border-[#016A6D]/40"
+                required
+              />
+            </div>
+          </motion.div>
 
-          <button
+          <motion.div variants={itemVariants} className="text-center">
+            <div className="flex items-center justify-center gap-2 text-[#043E52]/80">
+              <FiClock className="text-[#FFAA5D]" />
+              <span className="font-medium">
+                Code expires in: {formatTime(timer)}
+              </span>
+            </div>
+          </motion.div>
+
+          <motion.button
+            variants={itemVariants}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+            className="w-full bg-gradient-to-br from-[#FFAA5D] to-[#E16A3D] text-white py-3.5 rounded-xl font-medium hover:shadow-lg transition-all relative overflow-hidden group"
             disabled={loading}
           >
-            {loading ? "Verifying..." : "Verify OTP"}
-          </button>
+            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-20 transition-opacity" />
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                Verifying...
+              </div>
+            ) : (
+              "Verify Now →"
+            )}
+          </motion.button>
+
+          <motion.div variants={itemVariants} className="text-center mt-6">
+            <p className="text-[#043E52]/80">
+              Didn't receive code?{" "}
+              <button
+                onClick={handleResendOTP}
+                className={`text-[#016A6D] hover:text-[#FFAA5D] font-medium ${
+                  timer > 0 ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                disabled={timer > 0}
+              >
+                Resend OTP
+              </button>
+            </p>
+          </motion.div>
         </form>
 
-        {/* ✅ Resend OTP Button (Disabled Until Timer Ends) */}
-        <p className="text-gray-500 text-center mt-4">
-          Didn't receive an OTP?{" "}
-          <button
-            onClick={handleResendOTP}
-            className={`text-blue-500 hover:underline ${timer > 0 ? "cursor-not-allowed opacity-50" : ""}`}
-            disabled={timer > 0}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-red-500 text-center mt-4"
           >
-            Resend OTP
-          </button>
-        </p>
-      </div>
-    </div>
+            {error}
+          </motion.div>
+        )}
+
+        {resendMessage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-green-500 text-center mt-4"
+          >
+            {resendMessage}
+          </motion.div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 };
 
