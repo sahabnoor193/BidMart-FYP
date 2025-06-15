@@ -208,6 +208,59 @@ const SignIn = ({ setIsAuthenticated }) => {
       });
     }
   };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error("Please enter your email address first");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      toast.error("Please enter a valid Gmail address");
+      return;
+    }
+
+    const toastId = toast.loading("Sending reset OTP...");
+
+    try {
+      const response = await fetch(`${BASEURL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.update(toastId, {
+          render: "OTP sent to your email!",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        // Store email and set verification type
+        localStorage.setItem("email", email);
+        localStorage.setItem("verificationType", "password_reset");
+        navigate("/otp-verification");
+      } else {
+        toast.update(toastId, {
+          render: data.message || "Failed to send reset OTP",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.update(toastId, {
+        render: "An error occurred while sending reset OTP",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
   return (
     <motion.div 
       initial="hidden"
@@ -332,6 +385,7 @@ const SignIn = ({ setIsAuthenticated }) => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   type="button"
+                  onClick={handleForgotPassword}
                   className="text-[#016A6D] hover:text-[#FFAA5D] transition-colors text-sm font-medium"
                 >
                   Forgot Password?

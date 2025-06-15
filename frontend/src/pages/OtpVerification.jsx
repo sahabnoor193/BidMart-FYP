@@ -1,112 +1,123 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiKey, FiClock, FiArrowRight } from "react-icons/fi";
+import { FiKey, FiClock } from "react-icons/fi";
+import { toast } from "react-toastify";
 
 const OtpVerification = () => {
   const [otp, setOtp] = useState("");
-  const [email, setEmail] = useState(localStorage.getItem("email") || "");
+  const [email] = useState(localStorage.getItem("email") || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resendMessage, setResendMessage] = useState("");
-  const [timer, setTimer] = useState(300); // 5 minutes countdown (300 seconds)
+  const [timer, setTimer] = useState(300); // 5 minutes countdown
   const navigate = useNavigate();
   const location = useLocation();
   const isSwitchVerification = location.state?.isSwitchVerification || false;
+  const verificationType = localStorage.getItem("verificationType") || "signup";
 
-  // ✅ Countdown Timer Effect
+  // Get stored values for verification
+  const name = localStorage.getItem("name") || "";
+  const type = localStorage.getItem("type") || "buyer";
+  const password = localStorage.getItem("password") || "";
+
+  // Countdown Timer Effect
   useEffect(() => {
     if (timer > 0) {
       const interval = setInterval(() => {
         setTimer((prev) => prev - 1);
       }, 1000);
-      return () => clearInterval(interval); // Cleanup on unmount
+      return () => clearInterval(interval);
     }
   }, [timer]);
 
-  // // ✅ Function to Format Time (MM:SS)
-  // const formatTime = (seconds) => {
-  //   const minutes = Math.floor(seconds / 60);
-  //   const secs = seconds % 60;
-  //   return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
-  // };
-
-  // ✅ Function to Verify OTP
-  const [name, setName] = useState(localStorage.getItem("name") || ""); // Retrieve name from localStorage
-  const [type, setType] = useState(localStorage.getItem("type") || "buyer"); // Retrieve type from localStorage
-  const [password, setPassword] = useState(localStorage.getItem("password") || ""); // Retrieve password from localStorage
-  
+  // Function to Verify OTP
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setResendMessage("");
-  
-    console.log("🔹 Sending verification request with: ", { email, otp, name, password, type }); // ✅ Debugging log
-  
+
     try {
-      const endpoint = isSwitchVerification ? "user/switch-verify-otp" : "auth/verify-otp"; // Updated endpoint
+      let endpoint;
+      let requestBody;
+
+      if (verificationType === "password_reset") {
+        endpoint = "auth/verify-reset-otp";
+        requestBody = { email, otp };
+      } else {
+        endpoint = isSwitchVerification ? "user/switch-verify-otp" : "auth/verify-otp";
+        requestBody = { email, otp, name, password, type };
+      }
+
       const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp, name, password, type }),
+        body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text(); // Read the response as text
-        console.error("Error response:", errorText);
-        throw new Error("Failed to verify OTP. Please check the backend endpoint.");
-      }
-  
       const data = await response.json();
-      console.log("🔹 Response from backend: ", data); // ✅ Log backend response
-  
-      setLoading(false);
-  
+
       if (response.ok) {
-        alert(data.message);
-        if (isSwitchVerification) {
+        toast.success(data.message);
+        
+        if (verificationType === "password_reset") {
+          // Clear verification type and navigate to reset password
+          localStorage.removeItem("verificationType");
+          navigate("/reset-password");
+        } else if (isSwitchVerification) {
           localStorage.setItem("token", data.token);
           localStorage.setItem("userType", data.type);
-          navigate(`/${data.type}-dashboard`); // ✅ Redirect to the appropriate dashboard
+          navigate(`/${data.type}-dashboard`);
         } else {
-          navigate("/signin"); // ✅ Redirect to Sign-in Page
+          navigate("/signin");
         }
       } else {
         setError(data.message || "Invalid OTP. Please try again.");
       }
     } catch (err) {
-      console.error("❌ Error verifying OTP:", err);
+      console.error("Error verifying OTP:", err);
       setError("An error occurred while verifying OTP.");
+    } finally {
       setLoading(false);
     }
-  };  
-  
-  // ✅ Function to Resend OTP
+  };
+
   const handleResendOTP = async () => {
     setLoading(true);
     setError("");
     setResendMessage("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/user/resend-otp", {
+      let endpoint;
+      let requestBody;
+
+      if (verificationType === "password_reset") {
+        endpoint = "auth/forgot-password";
+        requestBody = { email };
+      } else {
+        endpoint = "user/resend-otp";
+        requestBody = { email, type };
+      }
+
+      const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, type }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
-      setLoading(false);
 
       if (response.ok) {
         setResendMessage("A new OTP has been sent to your email.");
-        setTimer(300); // ✅ Reset timer to 5 minutes
+        setTimer(300); // Reset timer to 5 minutes
       } else {
         setError(data.message || "Failed to resend OTP.");
       }
     } catch (err) {
       console.error("Error:", err);
       setError("An error occurred while resending OTP.");
+    } finally {
       setLoading(false);
     }
   };
@@ -115,17 +126,17 @@ const OtpVerification = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1, when: "beforeChildren" }
-    }
+      transition: { staggerChildren: 0.1, when: "beforeChildren" },
+    },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { type: "spring", stiffness: 120 }
-    }
+      transition: { type: "spring", stiffness: 120 },
+    },
   };
 
   const formatTime = (seconds) => {
@@ -135,7 +146,7 @@ const OtpVerification = () => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -148,23 +159,20 @@ const OtpVerification = () => {
         className="h-2 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] absolute top-0 left-0 right-0"
       />
 
-      <motion.div 
+      <motion.div
         variants={itemVariants}
         className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-[#016A6D]/10 relative overflow-hidden"
       >
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-[#FFAA5D]/10 rounded-full" />
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-[#016A6D]/10 rounded-full" />
 
-        <motion.div
-          variants={itemVariants}
-          className="text-center mb-8"
-        >
-          <motion.h2 
+        <motion.div variants={itemVariants} className="text-center mb-8">
+          <motion.h2
             whileHover={{ scale: 1.02 }}
             className="text-4xl font-bold text-[#043E52] mb-2 flex items-center justify-center gap-3"
           >
             <FiKey className="text-[#FFAA5D] p-2 bg-[#016A6D]/10 rounded-full" />
-            Verify OTP
+            {verificationType === "password_reset" ? "Verify Reset OTP" : "Verify OTP"}
           </motion.h2>
           <p className="text-[#043E52]/80">Enter the code sent to {email}</p>
         </motion.div>
@@ -175,7 +183,6 @@ const OtpVerification = () => {
               <FiKey className="absolute left-4 top-1/2 -translate-y-1/2 text-[#043E52]/50 group-focus-within:text-[#FFAA5D] transition-colors" />
               <input
                 type="text"
-                id="otp"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="Enter 6-digit code"
@@ -215,7 +222,7 @@ const OtpVerification = () => {
 
           <motion.div variants={itemVariants} className="text-center mt-6">
             <p className="text-[#043E52]/80">
-              Didn't receive code?{" "}
+              Didn&apos;t receive code?{" "}
               <button
                 onClick={handleResendOTP}
                 className={`text-[#016A6D] hover:text-[#FFAA5D] font-medium ${

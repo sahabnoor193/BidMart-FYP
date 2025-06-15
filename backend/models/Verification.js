@@ -12,11 +12,22 @@
 const mongoose = require("mongoose");
 
 const VerificationSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: true },
   otp: { type: String, required: true },
-  type: { type: String,enum: ['buyer', 'seller'], required: true }, // buyer or seller
-  createdAt: { type: Date, default: Date.now, expires: 300 } // Expires after 5 minutes
+  type: { 
+    type: String,
+    enum: ['buyer', 'seller', 'password_reset'],
+    required: true 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now, 
+    expires: 300 // Expires after 5 minutes
+  }
 });
+
+// Compound index to ensure unique email-type combinations
+VerificationSchema.index({ email: 1, type: 1 }, { unique: true });
 
 module.exports = mongoose.model("Verification", VerificationSchema);
 

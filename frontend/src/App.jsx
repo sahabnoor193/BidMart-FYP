@@ -30,6 +30,7 @@ import BuyerBids from './pages/BuyerBids';
 import SellerBids from './pages/SellerBids';
 import StripeCallback from './pages/StripeCallback';
 import SearchResults from './pages/SearchResults';
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -97,6 +98,7 @@ function App() {
             <Route path="/aboutus" element={<AboutUs />} />
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/search" element={<SearchResults />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
         </main>
         <Footer />

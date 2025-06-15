@@ -1,23 +1,5 @@
 const Conversation = require("../models/Conversation");
 const mongoose = require("mongoose");
-
-// exports.getConversations = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const conversations = await Conversation.find({
-//       participants: userId,
-//     })
-//       .sort({ updatedAt: -1 })
-//       .populate("participants", "name email"); // Populate participants with name and email
-
-//     res.json(conversations);
-//   } catch (err) {
-//     console.error("Error fetching conversations:", err);
-//     res.status(500).json({ message: "Failed to fetch conversations" });
-//   }
-// };
-
-// In ConversationController.js
 exports.getUserConversations = async (req, res) => {
   try {
     const userId = req.params.userId;
