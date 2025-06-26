@@ -4,14 +4,31 @@ import { motion } from "framer-motion";
 import { FiKey, FiClock, FiArrowRight } from "react-icons/fi";
 
 const OtpVerification = () => {
+
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const {
+    email: emailFromState,
+    name: nameFromState,
+    password: passwordFromState,
+    type: typeFromState
+  } = location.state || {};
+
+  const [email, setEmail] = useState(emailFromState || "");
+  const [name, setName] = useState(nameFromState || "");
+  const [password, setPassword] = useState(passwordFromState || "");
+  const [type, setType] = useState(typeFromState || "buyer");
+
   const [otp, setOtp] = useState("");
-  const [email, setEmail] = useState(localStorage.getItem("email") || "");
+  //const [email, setEmail] = useState(localStorage.getItem("email") || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resendMessage, setResendMessage] = useState("");
   const [timer, setTimer] = useState(300); // 5 minutes countdown (300 seconds)
-  const navigate = useNavigate();
-  const location = useLocation();
+  // const navigate = useNavigate();
+  // const location = useLocation();
   const isSwitchVerification = location.state?.isSwitchVerification || false;
 
   // ✅ Countdown Timer Effect
@@ -32,18 +49,18 @@ const OtpVerification = () => {
   // };
 
   // ✅ Function to Verify OTP
-  const [name, setName] = useState(localStorage.getItem("name") || ""); // Retrieve name from localStorage
-  const [type, setType] = useState(localStorage.getItem("type") || "buyer"); // Retrieve type from localStorage
-  const [password, setPassword] = useState(localStorage.getItem("password") || ""); // Retrieve password from localStorage
-  
+  // const [name, setName] = useState(localStorage.getItem("name") || ""); // Retrieve name from localStorage
+  // const [type, setType] = useState(localStorage.getItem("type") || "buyer"); // Retrieve type from localStorage
+  // const [password, setPassword] = useState(localStorage.getItem("password") || ""); // Retrieve password from localStorage
+
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setResendMessage("");
-  
+
     console.log("🔹 Sending verification request with: ", { email, otp, name, password, type }); // ✅ Debugging log
-  
+
     try {
       const endpoint = isSwitchVerification ? "user/switch-verify-otp" : "auth/verify-otp"; // Updated endpoint
       const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
@@ -57,12 +74,12 @@ const OtpVerification = () => {
         console.error("Error response:", errorText);
         throw new Error("Failed to verify OTP. Please check the backend endpoint.");
       }
-  
+
       const data = await response.json();
       console.log("🔹 Response from backend: ", data); // ✅ Log backend response
-  
+
       setLoading(false);
-  
+
       if (response.ok) {
         alert(data.message);
         if (isSwitchVerification) {
@@ -80,8 +97,8 @@ const OtpVerification = () => {
       setError("An error occurred while verifying OTP.");
       setLoading(false);
     }
-  };  
-  
+  };
+
   // ✅ Function to Resend OTP
   const handleResendOTP = async () => {
     setLoading(true);
@@ -121,8 +138,8 @@ const OtpVerification = () => {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: { type: "spring", stiffness: 120 }
     }
@@ -135,7 +152,7 @@ const OtpVerification = () => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -148,7 +165,7 @@ const OtpVerification = () => {
         className="h-2 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] absolute top-0 left-0 right-0"
       />
 
-      <motion.div 
+      <motion.div
         variants={itemVariants}
         className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-[#016A6D]/10 relative overflow-hidden"
       >
@@ -159,7 +176,7 @@ const OtpVerification = () => {
           variants={itemVariants}
           className="text-center mb-8"
         >
-          <motion.h2 
+          <motion.h2
             whileHover={{ scale: 1.02 }}
             className="text-4xl font-bold text-[#043E52] mb-2 flex items-center justify-center gap-3"
           >
@@ -218,9 +235,8 @@ const OtpVerification = () => {
               Didn't receive code?{" "}
               <button
                 onClick={handleResendOTP}
-                className={`text-[#016A6D] hover:text-[#FFAA5D] font-medium ${
-                  timer > 0 ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`text-[#016A6D] hover:text-[#FFAA5D] font-medium ${timer > 0 ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 disabled={timer > 0}
               >
                 Resend OTP

@@ -34,8 +34,8 @@ const Signup = ({ setIsAuthenticated }) => {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: { type: "spring", stiffness: 120 }
     }
@@ -93,8 +93,8 @@ const Signup = ({ setIsAuthenticated }) => {
       } else {
         const validation = validatePassword(value);
         if (!validation.isValid) {
-          setErrors(prev => ({ 
-            ...prev, 
+          setErrors(prev => ({
+            ...prev,
             password: 'Password is missing: ' + validation.missing.join(', ')
           }));
         } else {
@@ -106,7 +106,7 @@ const Signup = ({ setIsAuthenticated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     // Validate all fields before submission
     if (!validateEmail(formData.email)) {
       toast.error("Please use a valid Gmail address");
@@ -118,23 +118,35 @@ const Signup = ({ setIsAuthenticated }) => {
       toast.error("Password is missing: " + passwordValidation.missing.join(', '));
       return;
     }
-  
+
     try {
       const response = await fetch(`${BASEURL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         localStorage.setItem("email", formData.email);
         localStorage.setItem("name", formData.name);
         localStorage.setItem("type", formData.type);
         localStorage.setItem("password", formData.password);
-  
-        navigate("/otp-verification");
+
+        //navigate("/otp-verification");
+        navigate("/otp-verification", {
+          state: {
+            isSwitchVerification: false, // regular signup verification
+            email: formData.email,
+            name: formData.name,
+            password: formData.password,
+            type: formData.type,
+          }
+        });
+
+
+
       } else {
         if (data.isRegistered) {
           toast.error(data.message);
@@ -159,17 +171,17 @@ const Signup = ({ setIsAuthenticated }) => {
   const googleLoginHandler = async (googleResponse) => {
     // Show loading toast
     const toastId = toast.loading("Registering...");
-  
+
     try {
       const response = await fetch(`${BASEURL}/api/auth/register-google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(googleResponse),
       });
-  
+
       const data = await response.json();
       console.log(data, "Data");
-  
+
       if (response.ok) {
         toast.update(toastId, {
           render: "Register successful!",
@@ -177,14 +189,14 @@ const Signup = ({ setIsAuthenticated }) => {
           isLoading: false,
           autoClose: 3000,
         });
-  
+
         localStorage.setItem("token", data.token);
         localStorage.setItem("id", data.userId);
         localStorage.setItem("userEmail", data?.user?.email);
         localStorage.setItem("userType", "Buyer");
         localStorage.setItem("userName", data?.user?.name);
         setIsAuthenticated(true);
-  
+
         if (data.user.type === "seller") {
           navigate("/seller-dashboard");
         } else {
@@ -210,7 +222,7 @@ const Signup = ({ setIsAuthenticated }) => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -244,7 +256,7 @@ const Signup = ({ setIsAuthenticated }) => {
         </motion.div>
 
         {/* Form Section */}
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           className="lg:w-1/2 flex justify-center z-10"
         >
@@ -257,7 +269,7 @@ const Signup = ({ setIsAuthenticated }) => {
               variants={itemVariants}
               className="text-center mb-8"
             >
-              <motion.h2 
+              <motion.h2
                 whileHover={{ scale: 1.02 }}
                 className="text-4xl font-bold text-[#043E52] mb-2 flex items-center justify-center gap-3"
               >
@@ -277,7 +289,7 @@ const Signup = ({ setIsAuthenticated }) => {
                     placeholder="Your Name"
                     className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] bg-white/50 transition-all duration-300 hover:border-[#016A6D]/40"
                     required
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
               </motion.div>
@@ -289,9 +301,8 @@ const Signup = ({ setIsAuthenticated }) => {
                     type="email"
                     name="email"
                     placeholder="Your Email"
-                    className={`w-full pl-12 pr-4 py-3 rounded-xl border ${
-                      errors.email ? 'border-red-500' : 'border-[#016A6D]/20'
-                    } focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] bg-white/50 transition-all duration-300 hover:border-[#016A6D]/40`}
+                    className={`w-full pl-12 pr-4 py-3 rounded-xl border ${errors.email ? 'border-red-500' : 'border-[#016A6D]/20'
+                      } focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] bg-white/50 transition-all duration-300 hover:border-[#016A6D]/40`}
                     value={formData.email}
                     onChange={handleInputChange}
                     required
@@ -309,9 +320,8 @@ const Signup = ({ setIsAuthenticated }) => {
                     type={showPassword ? "text" : "password"}
                     name="password"
                     placeholder="Your Password"
-                    className={`w-full pl-12 pr-12 py-3 rounded-xl border ${
-                      errors.password ? 'border-red-500' : 'border-[#016A6D]/20'
-                    } focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] bg-white/50 transition-all duration-300 hover:border-[#016A6D]/40`}
+                    className={`w-full pl-12 pr-12 py-3 rounded-xl border ${errors.password ? 'border-red-500' : 'border-[#016A6D]/20'
+                      } focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] bg-white/50 transition-all duration-300 hover:border-[#016A6D]/40`}
                     value={formData.password}
                     onChange={handleInputChange}
                     required
@@ -322,12 +332,12 @@ const Signup = ({ setIsAuthenticated }) => {
                       onClick={togglePasswordVisibility}
                       className="text-[#043E52]/50 hover:text-[#FFAA5D] transition-colors"
                     >
-                      {showPassword ? 
-                        <AiFillEyeInvisible size={22} /> : 
+                      {showPassword ?
+                        <AiFillEyeInvisible size={22} /> :
                         <AiFillEye size={22} />}
                     </button>
-                    <AiOutlineQuestionCircle 
-                      className="text-[#043E52]/50 hover:text-[#FFAA5D] cursor-help" 
+                    <AiOutlineQuestionCircle
+                      className="text-[#043E52]/50 hover:text-[#FFAA5D] cursor-help"
                       size={22}
                       title="Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character"
                     />
@@ -341,10 +351,10 @@ const Signup = ({ setIsAuthenticated }) => {
               <motion.div variants={itemVariants}>
                 <div className="relative group">
                   <label className="block text-[#043E52]/80 mb-2 font-medium">Account Type</label>
-                  <select 
+                  <select
                     className="w-full py-3 px-4 rounded-xl border border-[#016A6D]/20 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] bg-white/50 transition-all duration-300 hover:border-[#016A6D]/40 appearance-none"
-                    value={formData.type} 
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                   >
                     <option value="seller">Seller</option>
                     <option value="buyer">Buyer</option>
@@ -392,8 +402,8 @@ const Signup = ({ setIsAuthenticated }) => {
               </motion.div>
 
               <motion.div variants={itemVariants} className="flex justify-center">
-              <GoogleOAuthProvider clientId="1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com">
-                  <GoogleLogin 
+                <GoogleOAuthProvider clientId="1001588197500-mmp90e0a3vmftbb3a8h3jbeput110kok.apps.googleusercontent.com">
+                  <GoogleLogin
                     onSuccess={(response) => googleLoginHandler(response)}
                     onError={(error) => console.log(error)}
                     theme="filled_blue"
@@ -407,12 +417,12 @@ const Signup = ({ setIsAuthenticated }) => {
                 </GoogleOAuthProvider>
               </motion.div>
 
-              <motion.p 
+              <motion.p
                 variants={itemVariants}
                 className="text-center text-[#043E52]/80 mt-8"
               >
                 Already have an account?{" "}
-                <a 
+                <a
                   href="/signin"
                   className="text-[#016A6D] hover:text-[#FFAA5D] font-medium transition-colors relative group"
                 >

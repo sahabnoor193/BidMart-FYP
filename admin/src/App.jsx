@@ -50,9 +50,9 @@ function AppWrapper() {
     <>
       {!isLoginPage && isAuthenticated && <Navbar />}
       <div className={!isLoginPage && isAuthenticated ? 'flex' : ''}>
-        {!isLoginPage && isAuthenticated && <SideBar />}
+        {!isLoginPage && isAuthenticated && <SideBar clearAuth={clearAuth}/>}
         <Routes>
-          <Route path="/login" element={!isAuthenticated ? <AdminLogin /> : <Navigate to="/" />} />
+          <Route path="/login" element={!isAuthenticated ? <AdminLogin setIsAuthenticated={setIsAuthenticated}/> : <Navigate to="/" />} />
           <Route path="/" element={<Navigate to="/Dashboard" replace />} />
           <Route path="/Dashboard" element={<PrivateRoute isAuthenticated={isAuthenticated}><Admin_Dashboard_Content /></PrivateRoute>} />
           <Route path="/Users" element={<PrivateRoute isAuthenticated={isAuthenticated}><Admin_Dashboard_Users /></PrivateRoute>} />

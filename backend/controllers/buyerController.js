@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const Product = require("../models/productModel");
 const Bid = require("../models/Bid");
+const Review = require("../models/Review");
 
 exports.getBuyerDashboard = async (req, res) => {
   try {
@@ -29,15 +30,38 @@ exports.getBuyerDashboard = async (req, res) => {
     // Filter out bids for deleted products (where productId is null)
     const activeProductBids = bids.filter(bid => bid.productId);
 
-    const bidHistory = activeProductBids.map(bid => ({
-      itemName: bid.productId.name,
-      bidAmount: bid.paymentId?.amount || bid.amount,
-      paymentDate: bid.paymentId?.createdAt,
-      bidStatus: bid.status,
-      checkoutUrl: bid.checkoutUrl,
-      sellerName: bid.productId.user?.name || 'Unknown Seller',
-      sellerEmail: bid.productId.user?.email,
-      bidId: bid._id
+    // Get review information for bids with Payment Success status
+    const bidHistory = await Promise.all(activeProductBids.map(async (bid) => {
+      let reviewInfo = null;
+      
+      // Check if user has already reviewed this seller for this product
+      if (bid.status === 'Payment Success' && bid.productId?.user) {
+        const existingReview = await Review.findOne({
+          reviewer: req.user.id,
+          seller: bid.productId.user._id,
+          product: bid.productId._id
+        });
+        
+        reviewInfo = {
+          canReview: !existingReview,
+          hasReviewed: !!existingReview,
+          reviewId: existingReview?._id
+        };
+      }
+
+      return {
+        itemName: bid.productId.name,
+        bidAmount: bid.paymentId?.amount || bid.amount,
+        paymentDate: bid.paymentId?.createdAt,
+        bidStatus: bid.status,
+        checkoutUrl: bid.checkoutUrl,
+        sellerName: bid.productId.user?.name || 'Unknown Seller',
+        sellerEmail: bid.productId.user?.email,
+        sellerId: bid.productId.user?._id,
+        productId: bid.productId._id,
+        bidId: bid._id,
+        reviewInfo
+      };
     }));
 
     res.json({

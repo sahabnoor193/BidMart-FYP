@@ -11,6 +11,7 @@ import Details from '../components/Details'; // Ensure this is imported and has 
 import BidProfile from '../components/BidProfile'; // Ensure this is imported and has correct prop signature
 import ContactInfo from '../components/ContactInfo';
 import PreviousBids from '../components/PreviousBids';
+import SellerReviews from '../components/SellerReviews';
 import socket from '../socket';
 import { toast } from 'react-toastify';
 import { FiArrowRight } from "react-icons/fi"; // Specific arrow icon for breadcrumbs
@@ -158,6 +159,11 @@ const ProductPage = () => {
       id: 'profile',
       label: 'Seller Profile', // Updated for clarity
       content: <BidProfile profile={productData.profile} />,
+    },
+    {
+      id: 'reviews',
+      label: 'Seller Reviews',
+      content: <SellerReviews sellerId={productData.profile.sellerId} />,
     },
     {
       id: 'contact',

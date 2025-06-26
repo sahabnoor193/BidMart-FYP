@@ -104,40 +104,39 @@ const ProductCard = ({ product }) => {
             {product.name}
           </h3>
 
-<div className="flex items-center justify-between mb-2">
-  {(() => {
-    const now = new Date();
-    const startDate = new Date(product.startDate);
-    const endDate = new Date(product.endDate);
+          <div className="flex items-center justify-between mb-2">
+            {(() => {
+              const now = new Date();
+              const startDate = new Date(product.startDate);
+              const endDate = new Date(product.endDate);
 
-    let status, style;
-    if (now < startDate) {
-      status = 'Not Started';
-      style = 'bg-gray-100 text-gray-800';
-    } else if (now >= startDate || now <= endDate) {
-      status = 'Live Now';
-      style = 'bg-green-100 text-green-800';
-    } else {
-      status = 'Ended';
-      style = 'bg-gray-100 text-gray-800';
-    }
+              let status, style;
+              if (now < startDate) {
+                status = 'Not Started';
+                style = 'bg-gray-100 text-gray-800';
+              } else if (now >= startDate || now <= endDate) {
+                status = 'Live Now';
+                style = 'bg-green-100 text-green-800';
+              } else {
+                status = 'Ended';
+                style = 'bg-gray-100 text-gray-800';
+              }
 
-    return (
-      <span className={`text-sm px-2 py-1 rounded-full ${style}`}>
-        {status}
-      </span>
-    );
-  })()}
-</div>
+              return (
+                <span className={`text-sm px-2 py-1 rounded-full ${style}`}>
+                  {status}
+                </span>
+              );
+            })()}
+          </div>
 
 
           {/* Price and Heart */}
           <div className="flex items-center justify-between">
             <p className="text-red-500 font-bold text-lg">PKR {product.startingPrice}</p>
             <button
-              className={`p-2 rounded-full border border-gray-300 hover:bg-gray-100 ${
-                isLoading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`p-2 rounded-full border border-gray-300 hover:bg-gray-100 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               onClick={toggleFavorite}
               disabled={isLoading}
             >
@@ -185,9 +184,9 @@ export default ProductCard;
 //     <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
 //       {/* Image Container */}
 //       <div className="relative group">
-//         <img 
-//           src={product.image} 
-//           alt={product.name} 
+//         <img
+//           src={product.image}
+//           alt={product.name}
 //           className="w-full h-48 object-cover"
 //         />
 //         {/* Hover Overlay */}
@@ -221,4 +220,3 @@ export default ProductCard;
 
 
 
-  

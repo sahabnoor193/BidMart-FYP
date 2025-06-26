@@ -293,7 +293,7 @@ const Product = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between p-2 rounded-lg bg-[#043E52]/5">
                     <span className="text-[#043E52]/80">Starting Price:</span>
-                    <span className="font-medium text-[#043E52]">PKR {startingPrice}</span>
+                    <span className="font-medium text-[#043E52]">${startingPrice}</span>
                   </div>
                   <div className="flex justify-between p-2 rounded-lg bg-[#043E52]/5">
                     <span className="text-[#043E52]/80">Bid Increase:</span>

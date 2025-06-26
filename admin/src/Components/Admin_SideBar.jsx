@@ -146,7 +146,7 @@ import { setActive } from '../features/Dashboard_Slices';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-const SideBar = () => {
+const SideBar = ({clearAuth}) => {
   const active = useSelector((state) => state.dashboard.active);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -269,6 +269,8 @@ const SideBar = () => {
               </motion.li>
             ))}
           </ul>
+
+          <button className='bg-[#E16A3D] hover:bg-[#FFAA5D] text-white font-bold py-2 px-4 rounded-lg mt-4 cursor-pointer' onClick={() => clearAuth()}>Logout</button>
         </div>
 
         {/* Decorative Border */}

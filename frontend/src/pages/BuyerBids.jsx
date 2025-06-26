@@ -1,10 +1,10 @@
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from 'framer-motion';
-import { FiArrowRight, FiClock, FiDollarSign, FiUser } from 'react-icons/fi';
+import { FiArrowRight, FiClock, FiDollarSign, FiUser, FiStar, FiCheckCircle } from 'react-icons/fi';
 
 // Add these variants at the top of the file
 const containerVariants = {
@@ -32,6 +32,8 @@ const BuyerBids = () => {
         bidHistory: []
       });
       const [stateChange, setStateChange] = useState(false);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
   const navigate = useNavigate();
   const handleLogout = useCallback(() => {
     console.log('[Logout] Clearing local storage and redirecting');
@@ -111,6 +113,7 @@ const BuyerBids = () => {
         const fetchUserData = async () => {
           console.log('[API Call] Starting data fetching process');
           try {
+            const token = localStorage.getItem('token');
             const dashboardResponse = await axios.get("http://localhost:5000/api/buyer/dashboard", {
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -121,11 +124,6 @@ const BuyerBids = () => {
             });
     
             console.log('User profile data fetched:', profileResponse.data);
-            
-            
-
-            console.log('Profile data:', profile);
-            console.log('User stored in localStorage:', JSON.parse(localStorage.getItem('user')));
     
             setLoading(false);
           } catch (err) {
@@ -151,6 +149,8 @@ const BuyerBids = () => {
         return 'bg-[#E16A3D]/20 text-[#E16A3D]';
       case 'payment pending':
         return 'bg-[#FFAA5D]/20 text-[#E16A3D]';
+      case 'payment success':
+        return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-600';
     }
@@ -269,6 +269,25 @@ const BuyerBids = () => {
                             >
                               Reject
                             </motion.button>
+                          </div>
+                        ) : bid.bidStatus.toLowerCase() === 'payment success' && bid.reviewInfo ? (
+                          <div className="flex gap-2">
+                            {bid.reviewInfo.canReview ? (
+                              <Link
+                                to={`/leave-review/${bid.sellerId}/${bid.productId}/${bid.bidId}`}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FFAA5D] to-[#E16A3D] text-white rounded-xl hover:shadow-lg transition-all"
+                              >
+                                <FiStar className="w-4 h-4" />
+                                Leave Review
+                              </Link>
+                            ) : bid.reviewInfo.hasReviewed ? (
+                              <div className="flex items-center gap-2 text-green-600">
+                                <FiCheckCircle className="w-4 h-4" />
+                                <span className="text-sm font-medium">Review Submitted</span>
+                              </div>
+                            ) : (
+                              <span className="text-[#043E52]/60">No action required</span>
+                            )}
                           </div>
                         ) : (
                           <span className="text-[#043E52]/60">No action required</span>
