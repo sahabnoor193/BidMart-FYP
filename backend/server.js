@@ -23,6 +23,8 @@ const feedbackRoutes = require("./routes/feedbackRoutes");
 const bidRoutes = require("./routes/bid");
 const stripeRoute = require("./routes/stripe");
 const paymentRoutes = require('./routes/paymentRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const mongoose = require('mongoose');
 const configureSocket = require('./config/socket');
 const conversationRoutes = require("./routes/conversationRoutes");
@@ -76,18 +78,18 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       const buyerId = bid.bidderId;
       const buyer = await User.findById(buyerId);
       const seller = await User.findById(product.user);
-       const payment = await Payment.create({
-    bidId: bid._id,
-    amount: bid.amount,
-    status: 'completed' 
-  });
-  console.log(payment,"payment");
-  console.log(bid,"bid");
-  
-  
-        bid.status = 'Payment Success';
-  bid.paymentId = payment._id;
-  await bid.save();
+      
+      const payment = await Payment.create({
+        bidId: bid._id,
+        amount: bid.amount,
+        status: 'completed' 
+      });
+      console.log(payment,"payment");
+      console.log(bid,"bid");
+      
+      bid.status = 'Payment Success';
+      bid.paymentId = payment._id;
+      await bid.save();
 
       if (!bid) return res.status(404).send("Bid not found.");
 
@@ -100,6 +102,28 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       if (buyer?._id) {
         await User.findByIdAndUpdate(buyer._id, { $inc: { acceptedBids: 1 } });
       }
+
+      // Create order for the successful payment
+      const Order = require('./models/Order');
+      const orderItems = [{
+        product: product._id,
+        seller: product.user,
+        name: product.name,
+        qty: 1,
+        price: bid.amount,
+        image: product.images[0] || '',
+        reviewLeft: false
+      }];
+
+      await Order.create({
+        user: buyerId,
+        orderItems,
+        shippingAddress: {},
+        paymentMethod: 'stripe',
+        totalPrice: bid.amount,
+        status: 'pending',
+        bidId: bid._id
+      });
 
       // Send emails
       if (buyer?.email) {
@@ -128,7 +152,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
           action: 'product_sold'
         }, io);
       }
-      console.log(`✅ Bid ${bidId} paid. Product ended. Buyer updated.`);
+      console.log(`✅ Bid ${bidId} paid. Product ended. Buyer updated. Order created.`);
     } 
     else if (event.type === 'checkout.session.expired') {
       const bid = await Bid.findByIdAndUpdate(
@@ -202,6 +226,8 @@ app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/orders', orderRoutes);
 // Create HTTP server
 const server = require('http').createServer(app);
 

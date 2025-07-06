@@ -107,9 +107,9 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUserEmail } from '../features/Dashboard_Slices';
-import { fetchAllProducts, selectAllProducts, selectLoadingState, selectError, setSingleProduct } from '../features/Products_Slice';
+import { fetchAllProducts, selectAllProducts, selectLoadingState, selectError, setSingleProduct, deleteProduct } from '../features/Products_Slice';
 import { motion } from 'framer-motion';
-import { FiLoader, FiAlertCircle, FiEye, FiDollarSign, FiTag, FiPackage, FiUser, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiLoader, FiAlertCircle, FiEye, FiDollarSign, FiTag, FiPackage, FiUser, FiCheckCircle, FiXCircle, FiTrash2 } from 'react-icons/fi';
 
 const Products = () => {
   const navigate = useNavigate();
@@ -145,7 +145,21 @@ const Products = () => {
     dispatch(setSingleProduct(id));
     navigate("/Product_Detail");
   };
-  
+  const handleDelete = async (productId) => {
+    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      try {
+        const resultAction = await dispatch(deleteProduct(productId));
+        if (deleteProduct.fulfilled.match(resultAction)) {
+          alert('Product deleted successfully');
+        } else {
+          throw new Error(resultAction.payload || 'Failed to delete product');
+        }
+      } catch (error) {
+        alert(error.message);
+        console.error('Delete product error:', error);
+      }
+    }
+  };  
   if (loading) {
     return (
       <motion.div 
@@ -279,6 +293,7 @@ const Products = () => {
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-[#043E52] uppercase tracking-wider">View</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-[#043E52] uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-[#043E52] uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-[#016A6D]/20">
@@ -293,7 +308,7 @@ const Products = () => {
                       {product.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#016A6D] font-medium">
-                      PKR {product.startingPrice?.toLocaleString() || '0'}
+                      Rs: {product.startingPrice?.toLocaleString() || '0'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#043E52]/90 capitalize">
                       {product.category}
@@ -326,6 +341,16 @@ const Products = () => {
                           : <FiXCircle className="w-4 h-4" />}
                         {product.status || 'PENDING'}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                 <button
+                 onClick={() => handleDelete(product._id)}
+                         className="text-red-600 hover:text-red-900 p-2 rounded-md hover:bg-red-50"
+                         title="Delete"
+                         disabled={loading}
+                       >
+                         <FiTrash2 size={18} />
+                       </button>
                     </td>
                   </motion.tr>
                 ))}

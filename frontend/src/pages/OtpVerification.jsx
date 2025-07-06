@@ -5,21 +5,29 @@ import { FiKey, FiClock } from "react-icons/fi";
 import { toast } from "react-toastify";
 
 const OtpVerification = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const {
+    email: emailFromState,
+    name: nameFromState,
+    password: passwordFromState,
+    type: typeFromState
+  } = location.state || {};
+
+  const [email, setEmail] = useState(emailFromState || localStorage.getItem("email") || "");
+  const [name, setName] = useState(nameFromState || localStorage.getItem("name") || "");
+  const [password, setPassword] = useState(passwordFromState || localStorage.getItem("password") || "");
+  const [type, setType] = useState(typeFromState || localStorage.getItem("type") || "buyer");
+
   const [otp, setOtp] = useState("");
-  const [email] = useState(localStorage.getItem("email") || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resendMessage, setResendMessage] = useState("");
   const [timer, setTimer] = useState(300); // 5 minutes countdown
-  const navigate = useNavigate();
-  const location = useLocation();
+  
   const isSwitchVerification = location.state?.isSwitchVerification || false;
   const verificationType = localStorage.getItem("verificationType") || "signup";
-
-  // Get stored values for verification
-  const name = localStorage.getItem("name") || "";
-  const type = localStorage.getItem("type") || "buyer";
-  const password = localStorage.getItem("password") || "";
 
   // Countdown Timer Effect
   useEffect(() => {
@@ -225,9 +233,8 @@ const OtpVerification = () => {
               Didn&apos;t receive code?{" "}
               <button
                 onClick={handleResendOTP}
-                className={`text-[#016A6D] hover:text-[#FFAA5D] font-medium ${
-                  timer > 0 ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`text-[#016A6D] hover:text-[#FFAA5D] font-medium ${timer > 0 ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 disabled={timer > 0}
               >
                 Resend OTP

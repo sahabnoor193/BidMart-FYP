@@ -174,7 +174,7 @@ const Hero = () => {
       title: 'Next-Gen Smartphones',
       text: 'Experience cutting-edge mobile technology with powerful features and sleek designs.',
       cta: 'Shop Latest Phones',
-      image: 'https://images.unsplash.com/photo-1605170439002-90845e8c0137?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' // High-res image
+      image: 'https://images.unsplash.com/photo-1712701707792-f2ae33db57dd?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' // High-res image
     },
     {
       category: 'laptops',

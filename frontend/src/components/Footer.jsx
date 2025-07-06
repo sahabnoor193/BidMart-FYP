@@ -104,7 +104,7 @@ const Footer = () => {
               <li><a href="/buyer-guide" className="hover:text-[#FFAA5D] transition">Buyer's Guide</a></li>
               <li><a href="/seller-guide" className="hover:text-[#FFAA5D] transition">Seller's Guide</a></li>
               <li><a href="/products" className="hover:text-[#FFAA5D] transition">Featured Auctions</a></li>
-              <li><a href="/products" className="hover:text-[#FFAA5D] transition">Browse Categories</a></li>
+              <li><a href="/sign-up" className="hover:text-[#FFAA5D] transition">Register yourself</a></li>
             </ul>
           </div>
 

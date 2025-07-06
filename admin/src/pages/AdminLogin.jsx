@@ -222,7 +222,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiUser, FiLock, FiArrowRight } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
-export default function AdminLogin() {
+export default function AdminLogin({setIsAuthenticated}) {
   const [form, setForm] = useState({ userName: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -265,6 +265,7 @@ export default function AdminLogin() {
       setSuccess('Login successful! Redirecting...');
       localStorage.setItem('adminToken', res.data.token);
       setTimeout(() => navigate('/Dashboard'), 1500);
+      setIsAuthenticated(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
