@@ -1,37 +1,60 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { X, Check, Info } from "lucide-react";
+import { X, Check, Info, Loader2 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { motion, AnimatePresence } from "framer-motion";
+import StripeOnboardingButton from "../components/StripeOnboardingButton";
+import { FiArrowRight } from "react-icons/fi";
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, when: "beforeChildren" }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
+
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.6,
+      ease: "easeInOut"
+    }
+  }
+};
+
 const DashboardProduct = () => {
-  // const BASEURL = "https://subhan-project-backend.onrender.com";
   const BASEURL = "http://localhost:5000";
   const { id } = useParams();
+  const navigate = useNavigate();
   const [error, setError] = useState(null);
- const [bids, setBids] = useState(null);
+  const [bids, setBids] = useState(null);
   const [bidLoading, setBidLoading] = useState(false);
   const [displayBids, setDisplayBids] = useState(false);
-  const [updateState, setUpdateState] = useState(false);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [displayCompleteStripe, setDisplayCompleteStripe] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
-
-  const handleAccept = (bidId) => {
-    console.log("Accepted bid:", bidId);
-    // Your accept logic here
-  };
-
-  const handleReject = (bidId) => {
-    console.log("Rejected bid:", bidId);
-    // Your reject logic here
-  };
   const updateBidStatus = async (bidId) => {
     const loadingToast = toast.loading("Updating bid status...");
-  
+
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -43,270 +66,585 @@ const DashboardProduct = () => {
         });
         return;
       }
-  
+
       const { data } = await axios.put(
-        `http://localhost:5000/api/bids/${bidId}/status`,
+        `${BASEURL}/api/bids/${bidId}/status`,
         { status: 'rejected' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-  
+
       toast.update(loadingToast, {
         render: "Bid status updated successfully!",
         type: "success",
         isLoading: false,
         autoClose: 3000,
       });
-      setDisplayBids(false);
-  
+      handleFetchBids();
+
       return data;
-  
+
     } catch (error) {
-      console.error('Error Updating Bid:', error);
-  
       toast.update(loadingToast, {
         render: "Failed to update bid status.",
         type: "error",
         isLoading: false,
         autoClose: 3000,
       });
-         
       return null;
     }
   };
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const response = await axios.get(`${BASEURL}/api/products/${id}`);
-        //   if (isMounted) {
         setProduct(response.data);
+        setSelectedImage(response.data?.images?.thumbnails[0]);
         setLoading(false);
-        //   }
       } catch (err) {
-        //   if (isMounted) {
         setError(err.message);
         setLoading(false);
-        //   }
       }
     };
 
     fetchProduct();
-
-  }, [id])
+  }, [id]);
 
   const handleFetchBids = async () => {
     setBidLoading(true);
-   try {
-     setDisplayBids(true);
-     const token = localStorage.getItem('token');
-     const response = await axios.get(`http://localhost:5000/api/bids/product/${id}`, {
-       headers: { Authorization: `Bearer ${token}` }
-     });
-     setBids(response.data);
-     // console.log('Bids:', response.data);
-   } catch (error) {
-     console.error('Error fetching bids:', error);
-   }finally{
-     setBidLoading(false);
-   }
- }
+    try {
+      setDisplayBids(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BASEURL}/api/bids/product/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setBids(response.data);
+    } catch (error) {
+      console.error('Error fetching bids:', error);
+      toast.error('Failed to load bids.');
+    } finally {
+      setBidLoading(false);
+    }
+  }
 
-  const [selectedImage, setSelectedImage] = useState(product?.images?.thumbnails[0]);
   const handleAcceptBid = async (bidId, productId, bidderEmail, bidderName) => {
     const toastId = toast.loading('Accepting bid...');
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/bids/accept`, {
+      await axios.put(`${BASEURL}/api/bids/accept`, {
         bidId: bidId,
         productId: productId,
         bidderEmail: bidderEmail
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
       toast.update(toastId, {
         render: `Payment Link has been sent to ${bidderName}!`,
         type: "success",
         isLoading: false,
         autoClose: 3000,
       });
-      setDisplayBids(false);
+      handleFetchBids();
     } catch (error) {
-      console.error('Error accepting bid:', error);
-      toast.error('Failed to accept bid');
-      toast.update(toastId, {
-        render: `Failed to accept bid from ${bidderName}!`,
-        type: "error",
-        isLoading: false,
-        autoClose: 3000,
-      });
+      const message = error?.response?.data?.message || "Unknown error occurred";
+      const isStripeCapabilityError = message.includes("capabilities enabled");
+      const stripeError = message.includes("Stripe Error");
+
+      if (isStripeCapabilityError || stripeError) {
+        toast.update(toastId, {
+          render: `Seller's Stripe account isn't ready. Complete Stripe Process.`,
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+        });
+        setDisplayCompleteStripe(true);
+        setDisplayBids(false);
+      } else {
+        toast.update(toastId, {
+          render: `Failed to accept bid from ${bidderName}!`,
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+      }
     }
   }
+
   const isPaymentPending = bids?.some(bid => bid.status === "payment pending");
   const pendingPayment = bids?.find(bid => bid.status === "payment pending");
+  const isPaymentSuccess = bids?.some(bid => bid.status === "Payment Success");
+  const successPayment = bids?.find(bid => bid.status === "Payment Success");
 
- console.log(pendingPayment,"isPaymentPending");
- 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-24 flex justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#f8fafb] to-white">
+        <motion.div
+          animate={{
+            rotate: 360,
+            scale: [1, 1.1, 1]
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="h-16 w-16 rounded-full border-t-4 border-b-4 border-[#E16A3D]"
+        />
       </div>
     );
   }
+
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-24 text-center">
-        <p className="text-red-500">Error loading product: {error}</p>
-      </div>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+        className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#f8fafb] to-white p-4"
+      >
+        <div className="h-1 w-64 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] mb-8 rounded-full" />
+        <p className="text-[#E16A3D] text-xl font-medium text-center">
+          Error loading product: {error}
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-6 px-6 py-3 bg-[#043E52] text-white rounded-xl hover:bg-[#016A6D] transition-colors shadow-md"
+        >
+          Try Again
+        </button>
+      </motion.div>
     );
   }
 
   if (!product) {
     return (
-      <div className="container mx-auto px-4 py-24 text-center">
-        <p>Product not found</p>
-      </div>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+        className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#f8fafb] to-white p-4"
+      >
+        <div className="h-1 w-64 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] mb-8 rounded-full" />
+        <p className="text-[#043E52] text-xl font-medium text-center">
+          Product not found
+        </p>
+        <button
+          onClick={() => navigate('/seller-dashboard/products')}
+          className="mt-6 px-6 py-3 bg-[#043E52] text-white rounded-xl hover:bg-[#016A6D] transition-colors shadow-md"
+        >
+          Go to My Products
+        </button>
+      </motion.div>
     );
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl mt-10">
-      <div className="md:flex gap-10">
-        {/* Image Gallery */}
-        <div className="md:w-1/2 w-full">
-          {/* Main Image */}
-          <div className="rounded-xl overflow-hidden shadow-md mb-4">
-            <img
-              src={selectedImage || product?.images?.thumbnails[0]}
-              alt="Product"
-              className="w-full h-96 object-contain transition duration-300"
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="min-h-screen bg-gradient-to-br from-[#e6f2f5] via-[#f0f8fa] to-[#faf6e9] font-serif py-12 px-4 sm:px-6 lg:px-8"
+    >
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="h-1 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] mb-8 rounded-full"
+        />
+
+        <motion.div variants={itemVariants} className="mb-8">
+          <nav className="flex items-center text-base text-[#043E52]/80 space-x-2">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="bg-[#E16A3D] w-2 h-4 mr-2 rounded-full"
             />
-          </div>
+            <button
+              onClick={() => navigate('/')}
+              className="hover:text-[#FFAA5D] transition-colors font-medium"
+            >
+              Home
+            </button>
+            <FiArrowRight className="text-[#FFAA5D] w-5 h-5" />
+            <button
+              onClick={() => navigate('/seller-dashboard')}
+              className="hover:text-[#FFAA5D] transition-colors font-medium"
+            >
+              Dashboard
+            </button>
+            <FiArrowRight className="text-[#FFAA5D] w-5 h-5" />
+            <button
+              onClick={() => navigate('/seller-dashboard/products')}
+              className="hover:text-[#FFAA5D] transition-colors font-medium"
+            >
+              My Products
+            </button>
+            <FiArrowRight className="text-[#FFAA5D] w-5 h-5" />
+            <span className="font-semibold text-[#043E52]">{product.title.substring(0, 20)}...</span>
+          </nav>
+        </motion.div>
 
-          {/* Thumbnail Row */}
-          <div className="flex gap-3 overflow-x-auto">
-            {product?.images.thumbnails?.map((img, index) => (
-              <img
-                key={index}
-                src={img}
-                alt={`Thumbnail ${index}`}
-                onClick={() => setSelectedImage(img)}
-                className={`h-20 w-20 object-contain rounded-lg cursor-pointer border-2 ${selectedImage === img ? 'border-blue-600' : 'border-transparent'
-                  } hover:border-blue-400 transition`}
-              />
-            ))}
-          </div>
-        </div>
+        <AnimatePresence>
+          {displayCompleteStripe && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative border border-[#E16A3D]/20"
+              >
+                <button
+                  className="absolute top-4 right-4 text-gray-500 hover:text-[#E16A3D] transition-colors"
+                  onClick={() => setDisplayCompleteStripe(false)}
+                >
+                  <X size={24} />
+                </button>
+                <div className="flex justify-center mb-4">
+                  <Info size={40} className="text-[#E16A3D]" />
+                </div>
+                <h2 className="text-xl font-bold text-[#043E52] mb-3 text-center">
+                  Stripe Account Setup Required
+                </h2>
+                <p className="text-[#043E52]/80 text-center mb-6">
+                  You need to complete the Stripe onboarding process to receive payments from accepted bids.
+                </p>
+                <div className="flex justify-center items-center">
+                  <StripeOnboardingButton />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Product Details */}
-        <div className="md:w-1/2 w-full space-y-6 mt-6 md:mt-0">
-          <h1 className="text-4xl font-bold text-gray-900">{product?.title}</h1>
-          <p className="text-gray-700 leading-relaxed">{product?.details?.description}</p>
+        <motion.div
+          variants={itemVariants}
+          className="bg-white rounded-2xl shadow-lg p-8 border border-[#016A6D]/10"
+        >
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="w-full lg:w-1/2">
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                className="rounded-xl overflow-hidden shadow-md mb-4 bg-[#016A6D]/10 flex items-center justify-center h-80 sm:h-96"
+              >
+                <motion.img
+                  key={selectedImage}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  src={selectedImage || product?.images?.thumbnails[0]}
+                  alt="Product"
+                  className="w-full h-full object-contain transition duration-300 p-2"
+                />
+              </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-800">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">🏷 Brand:</span> {product?.details.brand}
+              <div className="flex gap-3 overflow-x-auto py-2 custom-scroll">
+                {product?.images.thumbnails?.map((img, index) => (
+                  <motion.div
+                    key={index}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`cursor-pointer rounded-lg border-2 transition-all p-1 ${
+                      selectedImage === img
+                        ? 'border-[#FFAA5D] transform scale-105 shadow-md'
+                        : 'border-transparent opacity-80 hover:opacity-100'
+                    }`}
+                    onClick={() => setSelectedImage(img)}
+                  >
+                    <img
+                      src={img}
+                      alt={`Thumbnail ${index}`}
+                      className="h-16 w-16 object-contain"
+                    />
+                  </motion.div>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">📦 Quantity:</span> {product?.details?.quantity}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">💰 Starting Price:</span> PKR {product?.startBid.toLocaleString()}
-            </div>
-          </div>
 
-          <button
-            onClick={handleFetchBids}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg font-medium rounded-xl transition"
-          >
-            See Bids ({product?.bids.length})
-          </button>
-        </div>
+            <motion.div
+              variants={containerVariants}
+              className="w-full lg:w-1/2 space-y-6"
+            >
+              <motion.h1
+                variants={itemVariants}
+                className="text-3xl font-bold text-[#043E52]"
+              >
+                {product?.title}
+              </motion.h1>
+
+              <motion.div
+                variants={itemVariants}
+                className="bg-[#016A6D]/5 rounded-xl p-4"
+              >
+                <p className="text-[#043E52]/90 text-sm leading-relaxed">
+                  {product?.details?.description}
+                </p>
+              </motion.div>
+
+              <motion.div
+                variants={containerVariants}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+              >
+                <motion.div
+                  variants={itemVariants}
+                  className="bg-[#f8fafb] rounded-lg p-3 border border-[#016A6D]/10 text-sm"
+                >
+                  <div className="flex items-center gap-2 text-[#043E52]">
+                    <span className="font-semibold">🏷 Brand:</span>
+                    <span>{product?.details.brand}</span>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  variants={itemVariants}
+                  className="bg-[#f8fafb] rounded-lg p-3 border border-[#016A6D]/10 text-sm"
+                >
+                  <div className="flex items-center gap-2 text-[#043E52]">
+                    <span className="font-semibold">📦 Quantity:</span>
+                    <span>{product?.details?.quantity}</span>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  variants={itemVariants}
+                  className="bg-[#f8fafb] rounded-lg p-3 border border-[#016A6D]/10 text-sm"
+                >
+                  <div className="flex items-center gap-2 text-[#043E52]">
+                    <span className="font-semibold">💰 Starting Price:</span>
+                    <span>PKR {product?.startBid.toLocaleString()}</span>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  variants={itemVariants}
+                  className="bg-[#f8fafb] rounded-lg p-3 border border-[#016A6D]/10 text-sm"
+                >
+                  <div className="flex items-center gap-2 text-[#043E52]">
+                    <span className="font-semibold">📅 End Date:</span>
+                    <span>{new Date(product?.endDate).toLocaleDateString()}</span>
+                  </div>
+                </motion.div>
+              </motion.div>
+
+              <motion.div
+                variants={itemVariants}
+                className="flex flex-wrap gap-4 pt-4"
+              >
+                <motion.button
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 10px 25px -10px rgba(255, 170, 93, 0.5)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleFetchBids}
+                  className="flex-1 min-w-[200px] bg-gradient-to-r from-[#FFAA5D] to-[#E16A3D] text-white px-5 py-2.5 text-base font-medium rounded-xl transition-all shadow-md"
+                >
+                  See Bids ({product?.bids.length})
+                </motion.button>
+
+                <motion.button
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 10px 25px -10px rgba(1, 106, 109, 0.3)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => window.history.back()}
+                  className="flex-1 min-w-[150px] bg-[#043E52] hover:bg-[#016A6D] text-white px-5 py-2.5 text-base font-medium rounded-xl transition-all shadow-md"
+                >
+                  Go Back to Products
+                </motion.button>
+              </motion.div>
+            </motion.div>
+          </div>
+        </motion.div>
+
+        <AnimatePresence>
+          {displayBids && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-2xl p-6 w-full max-w-xl relative shadow-2xl max-h-[90vh] overflow-hidden flex flex-col font-sans border border-[#016A6D]/10"
+              >
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 0.8 }}
+                  className="h-1 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] mb-6 rounded-full"
+                />
+
+                <button
+                  onClick={() => {
+                    setDisplayBids(false);
+                    setBids(null);
+                  }}
+                  className="absolute top-6 right-6 text-[#043E52]/70 hover:text-[#E16A3D] transition-colors"
+                >
+                  <X size={22} />
+                </button>
+
+                <h2 className="text-xl font-bold mb-4 text-center text-[#043E52]">
+                  Live Bids for Product {product?.title.substring(0, 15)}...
+                </h2>
+
+                {bidLoading ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Loader2 className="w-10 h-10 text-[#016A6D] animate-spin" />
+                    <p className="text-[#043E52] text-sm mt-2">Loading bids...</p>
+                  </div>
+                ) : (
+                  <motion.div
+                    variants={containerVariants}
+                    className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scroll"
+                  >
+                    {isPaymentPending && (
+                      <motion.div
+                        variants={itemVariants}
+                        className="flex items-start gap-3 p-3 text-xs bg-yellow-50 rounded-xl border border-yellow-200"
+                      >
+                        <Info className="text-yellow-600 mt-0.5 flex-shrink-0" size={16}/>
+                        <p className="text-yellow-700">
+                          You've accepted a bid from <span className="font-semibold">{pendingPayment?.bidderId.name}</span> for <span className="font-semibold">PKR {pendingPayment?.amount.toLocaleString()}</span>!
+                          The bidder has been notified to complete payment.
+                        </p>
+                      </motion.div>
+                    )}
+                    {isPaymentSuccess && (
+                      <motion.div
+                        variants={itemVariants}
+                        className="flex items-start gap-3 p-3 text-xs bg-green-50 rounded-xl border border-green-200"
+                      >
+                        <Info className="text-green-600 mt-0.5 flex-shrink-0" size={16}/>
+                        <p className="text-green-700">
+                          <span className="font-semibold">{successPayment?.bidderId.name}</span> has completed payment for <span className="font-semibold">PKR {successPayment?.amount.toLocaleString()}</span>!
+                          This auction is now closed.
+                        </p>
+                      </motion.div>
+                    )}
+
+                    {bids && bids.length > 0 ? (
+                      bids.map((bid) => (
+                        <motion.div
+                          key={bid._id}
+                          variants={itemVariants}
+                          whileHover={{
+                            y: -3,
+                            boxShadow: "0 5px 15px -5px rgba(1, 106, 109, 0.15)"
+                          }}
+                          className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[#f8fafb] hover:bg-[#e6f2f5] p-3 rounded-xl border border-[#016A6D]/10 gap-3"
+                        >
+                          <div className="flex-1">
+                            <div className="font-semibold text-[#043E52] flex items-center gap-1.5 text-base">
+                              <span className="bg-[#FFAA5D] text-white p-0.5 px-1.5 rounded-full text-xs">PKR</span>
+                              Amount: <span className="font-bold">{bid.amount.toLocaleString()}</span>
+                            </div>
+                            <div className="text-xs text-[#043E52]/80 mt-1.5 flex items-center gap-1.5">
+                              <span className="bg-[#016A6D] text-white p-0.5 px-1.5 rounded-full text-xs">👤</span>
+                              Bidder: <span className="font-medium">{bid?.bidderId.name}</span>
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                                Bid Time: {new Date(bid.createdAt).toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                            {bid.status !== 'rejected' && bid.status !== 'Payment Success' ? (
+                              <div className="flex gap-2">
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  disabled={isPaymentPending || isPaymentSuccess}
+                                  onClick={() =>
+                                    handleAcceptBid(
+                                      bid._id,
+                                      bid.productId,
+                                      bid.bidderId.email,
+                                      bid.bidderId.name
+                                    )
+                                  }
+                                  className="disabled:cursor-not-allowed disabled:opacity-50 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-1.5 px-3 rounded-lg shadow flex items-center gap-1 text-xs"
+                                >
+                                  <Check size={16} />
+                                  <span>Accept</span>
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  disabled={isPaymentPending || isPaymentSuccess}
+                                  onClick={() => updateBidStatus(bid._id)}
+                                  className="disabled:cursor-not-allowed disabled:opacity-50 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-1.5 px-3 rounded-lg shadow flex items-center gap-1 text-xs"
+                                >
+                                  <X size={16} />
+                                  <span>Reject</span>
+                                </motion.button>
+                              </div>
+                            ) : (
+                              <p className={`font-medium px-3 py-1.5 rounded-lg text-xs ${bid.status === 'rejected' ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
+                                {bid.status === 'rejected' ? 'Rejected' : 'Payment Success'}
+                              </p>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <motion.div
+                        variants={itemVariants}
+                        className="text-center p-6 bg-[#f8fafb] rounded-xl border border-[#016A6D]/10"
+                      >
+                        <div className="text-4xl mb-3">💸</div>
+                        <h3 className="text-lg text-[#043E52] font-medium mb-2">
+                          No Bids Yet
+                        </h3>
+                        <p className="text-[#043E52]/80 text-sm">
+                          This product hasn't received any bids yet. Check back later!
+                        </p>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+
+                <div className="mt-6 pt-4 border-t border-[#016A6D]/20">
+                  <button
+                    onClick={() => setDisplayBids(false)}
+                    className="w-full py-2.5 bg-[#043E52] text-white rounded-xl hover:bg-[#016A6D] transition-colors text-base"
+                  >
+                    Close Bids
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Modal (same as before, unchanged) */}
-        {displayBids && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl relative shadow-2xl max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => {
-                setDisplayBids(false);
-                setBids(null);
-              }}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
-            >
-              <X size={28} />
-            </button>
-      
-            <h2 className="text-3xl font-bold mb-6 text-center">Bids</h2>
-      
-            {bidLoading ? (
-              <div className="flex justify-center items-center py-10">
-                <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scroll">
-                {isPaymentPending && (
-                <div className="flex items-center gap-2 p-2 text-sm bg-yellow-100 rounded-lg">
-                <Info/>
-                  <p>You have already accept the bid of {pendingPayment?.bidderId.name} with amount of Rs:{pendingPayment?.amount}!</p>
-                  </div>                  
-                )}
-
-                {bids && bids.length > 0 ? (
-                  bids.map((bid) => (
-                    <div
-                      key={bid._id}
-                      className="flex justify-between items-center bg-gray-100 hover:bg-gray-200 p-4 rounded-lg transition"
-                    >
-                      <div>
-                        <div className="font-semibold text-gray-800">
-                          💵 Amount: PKR {bid.amount.toLocaleString()}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          👤 User: {bid?.bidderId.name}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        {bid.status !== 'rejected' ? (
-                          <div className="flex gap-2">
-                        <button
-                         disabled={isPaymentPending}
-                          onClick={() =>
-                            handleAcceptBid(
-                              bid._id,
-                              bid.productId,
-                              bid.bidderId.email,
-                              bid.bidderId.name
-                            )
-                          }
-                          className="disabled:cursor-not-allowed disabled:opacity-50 bg-green-500 hover:bg-green-600 text-white p-2 rounded-full"
-                        >
-                          <Check size={20} />
-                        </button>
-                        <button
-                         disabled={isPaymentPending}
-                          onClick={() => updateBidStatus(bid._id)}
-                          className="disabled:cursor-not-allowed disabled:opacity-50 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"
-                        >
-                          <X size={20} />
-                        </button>
-
-                            </div>
-                        ):<p className="text-red-500">Rejected</p>}
-                        
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center text-gray-500">No bids yet.</div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-
-  )
+      <style>{`
+        .custom-scroll::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+          background: #e6f2f5;
+          border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+          background: #016A6D;
+          border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+          background: #043E52;
+        }
+      `}</style>
+    </motion.div>
+  );
 }
+
 export default DashboardProduct;

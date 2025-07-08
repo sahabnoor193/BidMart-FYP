@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import ProductCard from './ProductCard';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const ExploreBids = () => {
   const [products, setProducts] = useState([]);
@@ -14,7 +16,6 @@ const ExploreBids = () => {
         setLoading(true);
         const response = await axios.get('http://localhost:5000/api/products/active');
         const productsData = Array.isArray(response.data) ? response.data : [];
-        // Get only 4 random products for explore section
         const shuffled = [...productsData].sort(() => 0.5 - Math.random());
         setProducts(shuffled.slice(0, 4));
         setLoading(false);
@@ -22,9 +23,7 @@ const ExploreBids = () => {
         console.error('Error fetching products:', err);
         setError(err.message);
         setLoading(false);
-        
         setProducts([]);
-        setFilteredProducts([]);
       }
     };
 
@@ -33,9 +32,11 @@ const ExploreBids = () => {
 
   if (loading) {
     return (
-      <section className="pb-12 bg-white relative">
+      <section className="py-20 bg-[#e6f2f5]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">Loading...</div>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#016A6D]"></div>
+          </div>
         </div>
       </section>
     );
@@ -43,46 +44,67 @@ const ExploreBids = () => {
 
   if (error) {
     return (
-      <section className="pb-12 bg-white relative">
+      <section className="py-20 bg-[#e6f2f5]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-red-500">Error: {error}</div>
+          <div className="text-center text-[#E16A3D]">{error}</div>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="pb-12 bg-white relative">
+    <section className="py-20 bg-gradient-to-br from-[#e6f2f5] to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold text-black flex items-center mb-4">
-          <span className="bg-red-500 h-6 w-2 rounded-full mr-2"></span>
-          Explore Bids
-        </h2>
-        <h1 className="text-3xl font-bold text-red-500 mb-6">
-          Browse All The Bids
-        </h1>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-sm font-semibold text-[#016A6D] uppercase tracking-wider mb-2">
+            Featured Auctions
+          </h2>
+          <h1 className="text-4xl font-bold text-[#043E52] mb-4">
+            Explore <span className="text-[#FFAA5D]">Premium</span> Bids
+          </h1>
+          <p className="text-lg text-[#043E52]/80 max-w-2xl mx-auto">
+            Hand-picked auctions featuring exclusive items
+          </p>
+          <div className="mt-6 flex justify-center">
+            <div className="w-24 h-1 bg-[#016A6D] rounded-full"></div>
+          </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {Array.isArray(products) && products.map((product) => (
-            <ProductCard key={product._id} product={product} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          {Array.isArray(products) && products.map((product, index) => (
+            <motion.div
+              key={product._id}
+              initial={{ y: 50, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="hover:shadow-lg transition-shadow duration-300 rounded-lg overflow-hidden"
+            >
+              <ProductCard product={product} />
+            </motion.div>
           ))}
         </div>
 
-        <div className="flex justify-center mt-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="flex justify-center"
+        >
           <Link to="/allproducts">
-            <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded shadow-lg">
-              View All Bids
+            <button className="bg-[#FFAA5D] hover:bg-[#E16A3D] text-white font-bold py-4 px-10 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#FFAA5D] focus:ring-opacity-50">
+              Browse All Auctions
+              <span className="ml-2 inline-block transition-transform group-hover:translate-x-1">→</span>
             </button>
           </Link>
-        </div>
-      </div>
-
-      {/* Horizontal Line */}
-      <div className="flex justify-center mt-8">
-        <hr
-          className="border-black w-11/12 border-2"
-          style={{ margin: '0 auto' }}
-        />
+        </motion.div>
       </div>
     </section>
   );

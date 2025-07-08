@@ -19,10 +19,10 @@ exports.getUserProfile = async (req, res) => {
 
 exports.updateUserProfile = async (req, res) => {
   try {
-    const { name, email, phone, city, address } = req.body;
+    const { name, email, phone, city, country, address } = req.body;
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { name, email, phone, city, address },
+      { name, email, phone, city, country, address },
       { new: true }
     );
     res.json(user);
@@ -165,10 +165,30 @@ exports.switchVerifyOTP = async (req, res) => {
 
     // ✅ Find OTP in database (must match email & type)
     const verificationEntry = await Verification.findOne({ email, otp, type });
+    console.log("🔹 Found verification entry:", verificationEntry);
 
+    // if (!verificationEntry) {
+    //   console.log("❌ OTP Verification Failed: Invalid or expired OTP.");
+    //   return res.status(400).json({ message: "Invalid OTP or expired OTP" });
+    // }
     if (!verificationEntry) {
+      // Check if any entry exists for this email at all
+      const anyEntry = await Verification.findOne({ email });
+      console.log("🔹 Any entry for this email:", anyEntry);
+      
       console.log("❌ OTP Verification Failed: Invalid or expired OTP.");
-      return res.status(400).json({ message: "Invalid OTP or expired OTP" });
+      return res.status(400).json({ 
+        message: "Invalid OTP or expired OTP",
+        debug: {
+          received: { email, otp, type },
+          stored: anyEntry ? {
+            email: anyEntry.email,
+            otp: anyEntry.otp,
+            type: anyEntry.type,
+            createdAt: anyEntry.createdAt
+          } : null
+        }
+      });
     }
 
     // ✅ Ensure a user with the same email & type does not already exist
@@ -229,7 +249,7 @@ exports.getUserById = async (req, res) => {
 // Update user status
 exports.updateUserStatus = async (req, res) => {
   const { status } = req.body;
-  if (!["active", "inactive", "suspended"].includes(status)) {
+  if (!["active", "inactive", "suspended","blocked"].includes(status)) {
     return res.status(400).json({ message: "Invalid status value" });
   }
 

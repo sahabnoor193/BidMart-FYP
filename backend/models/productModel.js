@@ -8,8 +8,8 @@ const productSchema = new mongoose.Schema({
   country: { type: String, required: true },
   city: { type: String, required: true }, // Added city field
   startingPrice: { type: Number, required: true },
-  bidQuantity: { type: Number, required: true },
-  bidIncrease: { type: Number, required: true },
+  bidQuantity: { type: Number },
+  bidIncrease: { type: Number },
   category: { type: String, required: true },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
@@ -28,5 +28,11 @@ const productSchema = new mongoose.Schema({
     default: 0
   }
 });
+
+
+// Sania Updates
+productSchema.index({ name: 'text', description: 'text' });
+productSchema.index({ category: 1 });
+productSchema.index({ city: 1, country: 1 });
 
 module.exports = mongoose.model('Product', productSchema);

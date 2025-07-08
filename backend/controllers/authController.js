@@ -6,96 +6,34 @@ const Verification = require("../models/Verification");
 const {OAuth2Client} = require("google-auth-library");
 const { sendOTPEmail } = require("../services/emailService"); // Import email service
 
-// exports.register = async (req, res) => {
-//   try {
-//     console.log("🔹 Received Registration Request:", req.body);
+// Email validation function
+const validateEmail = (email) => {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+  return emailRegex.test(email);
+};
 
-//     const { name, email, password, type } = req.body;
+// Password validation function with detailed feedback
+const validatePassword = (password) => {
+  const requirements = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[@$!%*?&]/.test(password)
+  };
 
-//     // ✅ Validate Email Format
-//     if (!email.endsWith("@gmail.com")) {
-//       console.log("❌ Invalid Email: ", email);
-//       return res.status(400).json({ message: "Only Google emails (@gmail.com) are allowed." });
-//     }
+  const missing = [];
+  if (!requirements.length) missing.push("at least 8 characters");
+  if (!requirements.uppercase) missing.push("an uppercase letter");
+  if (!requirements.lowercase) missing.push("a lowercase letter");
+  if (!requirements.number) missing.push("a number");
+  if (!requirements.special) missing.push("a special character (@$!%*?&)");
 
-//     const UserModel = type === "buyer" ? Buyer : Seller;
-
-//     // ✅ Check if Email Already Exists
-//     let existingUser = await UserModel.findOne({ email });
-//     if (existingUser) {
-//       console.log("❌ User Already Exists:", email);
-//       return res.status(400).json({ message: "User already exists. Please log in." });
-//     }
-
-//     // ✅ Generate Verification Token
-//     const verificationToken = crypto.randomBytes(32).toString("hex");
-//     console.log("✅ Generated Token:", verificationToken);
-
-//     // ✅ Save verification entry with type
-//     await Verification.create({ email, token: verificationToken, type });
-
-//     console.log("📧 Sending Email to:", email);
-//     await sendVerificationEmail(email, verificationToken);
-
-//     res.status(201).json({ message: "Verification email sent. Please check your inbox." });
-//   } catch (error) {
-//     console.error("❌ Registration Error:", error);
-//     res.status(500).json({ error: "Server Error: " + error.message });
-//   }
-// };
-
-//for using unique email and type
-// exports.register = async (req, res) => {
-//   try {
-//     console.log("🔹 Received Registration Request:", req.body);
-
-//     const { name, email, password, type } = req.body;
-
-//     if (!name || !email || !password || !type) {
-//       return res.status(400).json({ message: "All fields are required" });
-//     }
-
-//     // ✅ Validate Email Format
-//     if (!email.endsWith("@gmail.com")) {
-//       return res.status(400).json({ message: "Only Google emails (@gmail.com) are allowed." });
-//     }
-
-//     // const UserModel = type === "buyer" ? Buyer : Seller;
-//     const UserModel = User; // Use the single User model
-
-//     // ✅ Check if Email Already Exists
-//     let existingUser = await UserModel.findOne({ email });
-//     if (existingUser) {
-//       return res.status(400).json({ message: "User already exists. Please log in." });
-//     }
-
-//     // ✅ Generate New OTP
-//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-//     console.log("✅ Generated OTP:", otp);
-
-//     // ✅ Check if OTP already exists for this user
-//     let verificationEntry = await Verification.findOne({ email });
-
-//     if (verificationEntry) {
-//       // ✅ Update existing OTP and reset expiration time
-//       verificationEntry.otp = otp;
-//       verificationEntry.createdAt = new Date(); // Reset expiration time
-//       await verificationEntry.save();
-//     } else {
-//       // ✅ Save New OTP in Verification Collection
-//       await Verification.create({ email, otp, type });
-//     }
-
-//     // ✅ Send OTP via Email
-//     console.log("📧 Sending OTP to:", email);
-//     await sendOTPEmail(email, otp); // Call email service to send OTP
-
-//     res.status(201).json({ message: "OTP sent. Please check your email." });
-//   } catch (error) {
-//     console.error("❌ Registration Error:", error);
-//     res.status(500).json({ error: "Server Error: " + error.message });
-//   }
-// };
+  return {
+    isValid: Object.values(requirements).every(Boolean),
+    missing
+  };
+};
 
 exports.register = async (req, res) => {
   try {
@@ -107,16 +45,29 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // ✅ Validate Email Format
-    if (!email.endsWith("@gmail.com")) {
-      return res.status(400).json({ message: "Only Google emails (@gmail.com) are allowed." });
+    // Validate email format
+    if (!validateEmail(email)) {
+      return res.status(400).json({ 
+        message: "Invalid email format. Please use a valid Gmail address." 
+      });
     }
 
-    // ✅ Check if the user has already registered with the same email and type
-    let existingUser = await User.findOne({ email, type });
-
+    // Check if email is already registered
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: `You have already registered as a ${type}. Please log in.` });
+      return res.status(400).json({ 
+        message: "This email is already registered. Please use a different email or try logging in.",
+        isRegistered: true
+      });
+    }
+
+    // Validate password strength with detailed feedback
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({ 
+        message: "Password is missing: " + passwordValidation.missing.join(", "),
+        missingRequirements: passwordValidation.missing
+      });
     }
 
     // ✅ Generate New OTP
@@ -145,87 +96,123 @@ exports.register = async (req, res) => {
     res.status(500).json({ error: "Server Error: " + error.message });
   }
 };
+
 // Changes By Muneeb, Added userid and userName in response
+
+// exports.login = async (req, res) => {
+//   try {
+//     const { email, password, rememberMe } = req.body;
+
+//     console.log("🔹 Login request received:", email);
+
+//     // ✅ Find all accounts for this email
+//     const userAccounts = await User.find({ email });
+
+//     if (userAccounts.length === 0) {
+//       console.log("❌ User not found:", email);
+//       return res.status(400).json({ message: "Invalid email or password" });
+//     }
+
+
+//         // ✅ Check password against each account
+//         let matchedAccount = null;
+//         for (let account of userAccounts) {
+//           const isMatch = await bcrypt.compare(password, account.password);
+//           if (isMatch) {
+//             matchedAccount = account;
+//             break; // Stop checking once we find a valid password match
+//           }
+//         }
+//     if (!matchedAccount) {
+//       console.log("❌ Incorrect password for:", email);
+//       return res.status(400).json({ message: "Invalid email or password" });
+//     }
+//         // ✅ Generate JWT Token
+//         const token = jwt.sign(
+//           { id: matchedAccount.id, email: matchedAccount.email, type: matchedAccount.type },
+//           process.env.JWT_SECRET,
+//           { expiresIn: rememberMe ? '30d' : '1d' } // 30 days if "Remember Me" is checked, otherwise 1 day
+//         );
+//     // console.log("✅ User logged in:", email, "as", userType);
+//     // res.status(200).json({ message: "Login successful", token, type: userType, id: user.id,name: user.name });
+//     console.log("✅ User logged in:", email, "as", matchedAccount.type);
+//     res.status(200).json({
+//       message: "Login successful",
+//       token,
+//       type: matchedAccount.type,
+//       id: matchedAccount.id,
+//       name: matchedAccount.name,
+//     });
+//   } catch (error) {
+//     console.error("❌ Login Error:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+// Added By Muneeb
+
 exports.login = async (req, res) => {
   try {
     const { email, password, rememberMe } = req.body;
-
+   console.log(password,"password");
+   
     console.log("🔹 Login request received:", email);
 
-    // ✅ Find all accounts for this email
+    // ✅ Find all user accounts associated with the provided email
     const userAccounts = await User.find({ email });
 
     if (userAccounts.length === 0) {
-      console.log("❌ User not found:", email);
+      console.log("❌ No accounts found for email:", email);
       return res.status(400).json({ message: "Invalid email or password" });
     }
+     console.log(userAccounts,"userAccounts");
+     
+    // ✅ Try to match the provided password with any account's hashed password
+    const matchedAccount = await findMatchingAccount(userAccounts, password);
 
-    // // ✅ Check password against any valid user
-    // let user = null;
-    // for (let acc of userAccounts) {
-    //   const isMatch = await bcrypt.compare(password, acc.password);
-    //   if (isMatch) {
-    //     user = acc;
-    //     break; // Stop checking once we find a valid password match
-    //   }
-    // }
-        // ✅ Check password against each account
-        let matchedAccount = null;
-        for (let account of userAccounts) {
-          const isMatch = await bcrypt.compare(password, account.password);
-          if (isMatch) {
-            matchedAccount = account;
-            break; // Stop checking once we find a valid password match
-          }
-        }
-
-    // if (!user) {
-    //   console.log("❌ Incorrect password for:", email);
-    //   return res.status(400).json({ message: "Invalid email or password" });
-    // }
     if (!matchedAccount) {
-      console.log("❌ Incorrect password for:", email);
+      console.log("❌ Incorrect password for email:", email);
       return res.status(400).json({ message: "Invalid email or password" });
     }
-
-    // // ✅ Determine user type
-    // const hasBuyer = userAccounts.some((acc) => acc.type === "buyer");
-    // const hasSeller = userAccounts.some((acc) => acc.type === "seller");
-
-    // let userType = user.type; // Default to the type of the matched user
-    // if (hasBuyer && hasSeller) {
-    //   userType = "buyer"; // If both accounts exist, default to buyer
-    // }
 
     // ✅ Generate JWT Token
-    // Update token expiration based on remember me
-    // const token = jwt.sign(
-    //   { id: user.id, email: user.email, type: userType }, // Include email in the payload
-    //   process.env.JWT_SECRET,
-    //   { expiresIn: rememberMe ? '30d' : '1d' }, // 30 days if checked, 1 day if not
-    // );
-        // ✅ Generate JWT Token
-        const token = jwt.sign(
-          { id: matchedAccount.id, email: matchedAccount.email, type: matchedAccount.type },
-          process.env.JWT_SECRET,
-          { expiresIn: rememberMe ? '30d' : '1d' } // 30 days if "Remember Me" is checked, otherwise 1 day
-        );
-    // console.log("✅ User logged in:", email, "as", userType);
-    // res.status(200).json({ message: "Login successful", token, type: userType, id: user.id,name: user.name });
+    const token = jwt.sign(
+      {
+        id: matchedAccount._id, // Use _id instead of id (Mongoose convention)
+        email: matchedAccount.email,
+        type: matchedAccount.type,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: rememberMe ? '30d' : '1d' }
+    );
+
     console.log("✅ User logged in:", email, "as", matchedAccount.type);
-    res.status(200).json({
+
+    return res.status(200).json({
       message: "Login successful",
       token,
       type: matchedAccount.type,
-      id: matchedAccount.id,
+      id: matchedAccount._id,
       name: matchedAccount.name,
     });
+
   } catch (error) {
     console.error("❌ Login Error:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: "Server error during login" });
   }
 };
-// Added By Muneeb
+
+// ✅ Helper function to find the account that matches the password
+async function findMatchingAccount(accounts, password) {
+  for (let account of accounts) {
+    const isMatch = await bcrypt.compare(password, account.password);
+    console.log(isMatch,"isMatch");
+    
+    if (isMatch) return account;
+  }
+  return null;
+}
+
 exports.googleRegister = async (req, res) => {
   try {
     const { credential } = req.body;
@@ -300,7 +287,7 @@ exports.googleLogins = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id, type: user.type }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
@@ -457,7 +444,8 @@ exports.verifyOTP = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: `You are already verified as a ${type}. Please log in.` });
     }
-
+    console.log(password,"password in otp");
+    
     // ✅ Hash the password before saving
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);

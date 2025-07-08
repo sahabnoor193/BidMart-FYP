@@ -13,14 +13,17 @@ const UserSchema = new mongoose.Schema({
   favourites: { type: Number, default: 0 },
   phone: { type: Number, default: undefined },
   city: { type: String, default: undefined },
+  country: { type: String, default: undefined },
   address: { type: String, default: undefined },
+  stripeAccountId : { type: String,default: null },
+  stripeLoginLink : { type: String,default: null },
   createdAt: { type: Date, default: Date.now },
   totalFavorites: { type: Number, default: 0 },
 
   // ✅ New status field
   status: {
     type: String,
-    enum: ["active", "inactive", "suspended"],
+    enum: ["active", "inactive", "suspended","blocked"],
     default: "active"
   }
 });
