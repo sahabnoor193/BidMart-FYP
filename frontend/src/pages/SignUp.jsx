@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 const Signup = ({ setIsAuthenticated }) => {
-  const BASEURL = "http://localhost:5000";
+  const BASEURL = import.meta.env.VITE_API_URL;
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: '',

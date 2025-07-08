@@ -316,13 +316,29 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 app.use(express.json());
 
 // Allow both frontend ports
+const isProduction = process.env.NODE_ENV === 'production';
 const corsOptions = {
-  origin: ['http://localhost:5000', 'http://localhost:5173','http://localhost:5174','http://192.168.5.91:5173'], // Add your frontend URL
+  origin: isProduction
+    ? [
+        'https://your-frontend.onrender.com',
+        'https://your-admin.onrender.com'
+      ]
+    : [
+        'http://localhost:5000',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://192.168.5.91:5173'
+      ], // Add your frontend/admin Render URLs
   credentials: true,  // Allows cookies & authentication headers
 };
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
+
+// Health check endpoint for Render
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
+});
 
 connectDB();
 

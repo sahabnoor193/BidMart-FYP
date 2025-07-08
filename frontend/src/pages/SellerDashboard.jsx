@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 // Import the icons you need
 import { FaStar, FaExchangeAlt, FaTimes, FaPlus, FaEdit, FaTrash, FaSave, FaHeart, FaBell, FaHandshake, FaMoneyCheckAlt, FaStripe, FaTimesCircle } from 'react-icons/fa';
 import StripeOnboardingButton from '../components/StripeOnboardingButton';
-import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { FiBox, FiClock, FiDollarSign, FiStar, FiEye, FiMapPin, FiUser, FiMail, FiPhone, FiLock, FiMessageSquare, FiHome, FiBell, FiLogOut, FiPlus, FiList, FiArrowRight, FiX } from 'react-icons/fi';
+import { FiBox, FiClock, FiStar, FiEye, FiMapPin, FiUser, FiMail, FiPhone, FiLock, FiMessageSquare, FiHome, FiBell, FiLogOut, FiPlus, FiList, FiArrowRight, FiX } from 'react-icons/fi';
 
 const SellerDashboard = ({ setIsAuthenticated }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -16,7 +15,7 @@ const SellerDashboard = ({ setIsAuthenticated }) => {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const BASEURL = "http://localhost:5000";
+  const BASEURL = import.meta.env.VITE_API_URL;
   const [userHaveStripeAccount, setUserHaveStripeAccount] = useState(true);
   const [sellerData, setSellerData] = useState({
     activeBids: 0,

@@ -34,7 +34,7 @@
 // //     console.log("Sending status:", newStatus); 
 
 // //     try {
-// //       const response = await fetch(`http://localhost:5000/api/user/updateUserStatus/${userData._id}`, {
+// //       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/updateUserStatus/${userData._id}`, {
 // //         method: 'PUT',
 // //         headers: {
 // //           'Content-Type': 'application/json',
@@ -70,7 +70,7 @@
 // //     if (!userData?._id) return;
 
 // //     try {
-// //       const response = await fetch(`http://localhost:5000/api/use/deleteUser/${userData._id}`, {
+// //       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/use/deleteUser/${userData._id}`, {
 // //         method: 'DELETE',
 // //       });
 
@@ -330,7 +330,7 @@
 //     if (!userData?._id) return; 
 
 //     try {
-//       const response = await fetch(`http://localhost:5000/api/user/updateUserStatus/${userData._id}`, {
+//       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/updateUserStatus/${userData._id}`, {
 //         method: 'PUT',
 //         headers: {
 //           'Content-Type': 'application/json',
@@ -366,7 +366,7 @@
 //     if (!userData?._id) return;
 
 //     try {
-//       const response = await fetch(`https://bidmart-backend.onrender.com/api/user/deleteUser/${userData._id}`, {
+//       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/deleteUser/${userData._id}`, {
 //         method: 'DELETE',
 //       });
 
@@ -708,7 +708,7 @@ const UserControl = () => {
     if (!userData?._id) return; 
 
     try {
-      const response = await fetch(`http://localhost:5000/api/user/updateUserStatus/${userData._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/updateUserStatus/${userData._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -744,7 +744,7 @@ const UserControl = () => {
     if (!userData?._id) return;
 
     try {
-      const response = await fetch(`https://bidmart-backend.onrender.com/api/user/deleteUser/${userData._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/deleteUser/${userData._id}`, {
         method: 'DELETE',
       });
 

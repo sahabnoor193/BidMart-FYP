@@ -4,9 +4,9 @@ import axios from 'axios';
 // Async Thunks
 export const fetchAllProducts = createAsyncThunk(
   'products/fetchAllProducts',
-  async (_, { rejectWithValue }) => {
+  async ({ rejectWithValue }) => {
     try {
-      const response = await axios.get('http://localhost:5000/api/products/getAllProducts');
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/products/getAllProducts`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -18,7 +18,7 @@ export const fetchProductById = createAsyncThunk(
   'products/fetchProductById',
   async (productId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/products/${productId}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/products/${productId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -30,7 +30,7 @@ export const createProduct = createAsyncThunk(
   'products/createProduct',
   async (productData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/products', productData);
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/products`, productData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -42,7 +42,7 @@ export const updateProduct = createAsyncThunk(
   'products/updateProduct',
   async ({ productId, productData }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`http://localhost:5000/api/products/${productId}`, productData);
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/products/${productId}`, productData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -54,7 +54,7 @@ export const deleteProduct = createAsyncThunk(
   'products/deleteProduct',
   async (productId, { rejectWithValue }) => {
     try {
-      await axios.delete(`http://localhost:5000/api/products/deleteProductForAdmin/${productId}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/products/deleteProductForAdmin/${productId}`);
       return productId;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);

@@ -128,7 +128,6 @@ import axios from "axios";
 import { setSinglePayment } from "../features/Payment_Slice";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { FiDollarSign, FiCreditCard, FiCalendar, FiPackage, FiUser } from "react-icons/fi";
 
 const Payments = () => {
@@ -140,7 +139,7 @@ const Payments = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5000/api/payments/allPayments");
+        const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/payments/allPayments`);
         setPayments(data);
       } catch (error) {
         console.error("Error fetching payments:", error);
@@ -185,7 +184,7 @@ const Payments = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen bg-gradient-to-b from-[#e6f2f5] to-white">
-        <motion.div
+        <div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           className="rounded-full h-12 w-12 border-t-2 border-b-2 border-[#016A6D]"
@@ -195,39 +194,39 @@ const Payments = () => {
   }
 
   return (
-    <motion.div 
+    <div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 pt-[90px] min-h-screen bg-gradient-to-b from-[#e6f2f5] to-white font-serif w-full"
     >
       {/* Decorative Border */}
-      <motion.div
+      <div
         initial={{ scaleX: 0 }}
         animate={{ scaleX: 1 }}
         transition={{ duration: 0.8 }}
         className="h-1 bg-gradient-to-r from-[#E16A3D] via-[#FFAA5D] to-[#016A6D] mb-8"
       />
 
-      <motion.h1 
+      <h1 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="text-3xl font-bold text-center text-[#043E52] mb-10 flex items-center justify-center gap-3"
       >
         <FiCreditCard className="text-[#016A6D]" />
         Payment Records
-      </motion.h1>
+      </h1>
 
       {payments.length === 0 ? (
-        <motion.div
+        <div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="text-center p-8 bg-white/90 backdrop-blur-lg rounded-2xl shadow-lg border border-[#016A6D]/20 max-w-md mx-auto"
         >
           <FiDollarSign className="mx-auto text-4xl text-[#043E52]/50 mb-4" />
           <p className="text-[#043E52]">No payment records found</p>
-        </motion.div>
+        </div>
       ) : (
-        <motion.div 
+        <div 
           initial="hidden"
           animate="visible"
           variants={{
@@ -245,7 +244,7 @@ const Payments = () => {
           {payments.map((payment) => {
             const statusColors = getStatusColor(payment.status);
             return (
-              <motion.div
+              <div
                 key={payment.paymentId}
                 variants={{
                   hidden: { opacity: 0, y: 20 },
@@ -326,20 +325,20 @@ const Payments = () => {
                   </div>
                 </div>
 
-                <motion.button
+                <button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => Navigation(payment)}
                   className="w-full mt-4 bg-gradient-to-r from-[#016A6D] to-[#043E52] text-white py-2 rounded-lg text-sm font-medium transition-all"
                 >
                   View Details
-                </motion.button>
-              </motion.div>
+                </button>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 

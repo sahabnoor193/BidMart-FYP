@@ -1,5 +1,5 @@
 // src/pages/StripeCallback.jsx
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -19,7 +19,7 @@ const StripeCallback = () => {
       }
 
       try {
-        await axios.get('http://localhost:5000/api/stripe/oauth/callback', {
+        await axios.get(`${import.meta.env.VITE_API_URL}/api/stripe/oauth/callback`, {
           params: { code, state },
         });
 

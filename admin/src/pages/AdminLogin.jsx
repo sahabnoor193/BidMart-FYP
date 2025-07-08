@@ -261,7 +261,7 @@ export default function AdminLogin({setIsAuthenticated}) {
     setSuccess('');
 
     try {
-      const res = await axios.post('http://localhost:5000/api/admin/login', form);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/admin/login`, form);
       setSuccess('Login successful! Redirecting...');
       localStorage.setItem('adminToken', res.data.token);
       setTimeout(() => navigate('/Dashboard'), 1500);
